@@ -36,31 +36,33 @@
       </header>
 
       <main>
-        <section class="hero" id="home" aria-labelledby="hero-title">
-          <div class="hero-copy hero-copy-left">
-            <p class="eyebrow">Duncan Robert</p>
-            <h1 id="hero-title"><span>digital</span></h1>
-          </div>
-          <div class="portrait-stage" aria-label="Portrait card">
-            <div class="portrait-card portrait-card-back">
-              <img src="https://framerusercontent.com/images/VRQgkdWsjawSg1qpCm45HfSY1I.jpeg" alt="" />
+        <div class="hero-scene" id="home" aria-labelledby="hero-title">
+          <section class="hero">
+            <div class="hero-copy hero-copy-left">
+              <p class="eyebrow">Duncan Robert</p>
+              <h1 id="hero-title"><span>digital</span></h1>
             </div>
-            <div class="portrait-card portrait-card-front">
-              <img
-                src="https://framerusercontent.com/images/qrxY8NagVO40NBrdhFEGgFR3PYY.jpg"
-                alt="Portrait of designer Duncan Robert"
-              />
+            <div class="portrait-stage" aria-label="Portrait card">
+              <div class="portrait-card portrait-card-back">
+                <img src="https://framerusercontent.com/images/VRQgkdWsjawSg1qpCm45HfSY1I.jpeg" alt="" />
+              </div>
+              <div class="portrait-card portrait-card-front">
+                <img
+                  src="https://framerusercontent.com/images/qrxY8NagVO40NBrdhFEGgFR3PYY.jpg"
+                  alt="Portrait of designer Duncan Robert"
+                />
+              </div>
+              <div class="circle-badge" aria-hidden="true">
+                <span>Available</span>
+                <span>for work</span>
+              </div>
             </div>
-            <div class="circle-badge" aria-hidden="true">
-              <span>Available</span>
-              <span>for work</span>
+            <div class="hero-copy hero-copy-right">
+              <h1><span>designer</span></h1>
+              <p>I am a US-based digital designer and Framer developer.</p>
             </div>
-          </div>
-          <div class="hero-copy hero-copy-right">
-            <h1><span>designer</span></h1>
-            <p>I am a US-based digital designer and Framer developer.</p>
-          </div>
-        </section>
+          </section>
+        </div>
 
         <section class="services section-grid" id="services" aria-labelledby="services-title">
           <div class="section-intro">
@@ -140,46 +142,6 @@
           </div>
         </section>
 
-        <section class="process section-grid" aria-labelledby="process-title">
-          <div class="section-intro sticky-intro">
-            <h2 id="process-title">Process</h2>
-            <p>
-              A clear workflow keeps every project moving from first idea to final launch with fewer
-              surprises and stronger decisions.
-            </p>
-          </div>
-          <div class="process-grid">
-            <article>
-              <span>01.</span>
-              <h3>Discovery</h3>
-              <p>Clarify goals, audience, constraints, and the emotional job the design needs to do.</p>
-            </article>
-            <article>
-              <span>02.</span>
-              <h3>Concept</h3>
-              <p>Shape direction through structure, mood, visual language, and interaction intent.</p>
-            </article>
-            <article class="image-tile">
-              <img src="https://framerusercontent.com/images/xmKml0E7v2iBI4zbbj0yVccaQwg.jpeg" alt="" />
-            </article>
-            <article>
-              <span>03.</span>
-              <h3>Design</h3>
-              <p>Create responsive layouts, strong hierarchy, clear systems, and memorable moments.</p>
-            </article>
-            <article>
-              <span>04.</span>
-              <h3>Test</h3>
-              <p>Review usability, accessibility, performance, and polish before launch.</p>
-            </article>
-            <article>
-              <span>05.</span>
-              <h3>Delivery</h3>
-              <p>Launch the final project with guidance for handoff, upkeep, and future growth.</p>
-            </article>
-          </div>
-        </section>
-
         <section class="testimonials" aria-labelledby="testimonials-title">
           <div class="section-heading-wide">
             <h2 id="testimonials-title">What clients say</h2>
@@ -240,30 +202,6 @@
           </div>
         </section>
 
-        <section class="template-notes" aria-labelledby="template-title">
-          <div class="section-heading-wide">
-            <h2 id="template-title">Template Guide</h2>
-            <p>The original Framer template includes a few practical editing notes.</p>
-          </div>
-          <div class="guide-steps">
-            <article>
-              <span>01</span>
-              <h3>Replace the hero card image</h3>
-              <p>The portrait card in the Hero section is the primary visual identity layer.</p>
-            </article>
-            <article>
-              <span>02</span>
-              <h3>Replace service hover imagery</h3>
-              <p>The service accordion image belongs inside the Services component.</p>
-            </article>
-            <article>
-              <span>03</span>
-              <h3>Theme toggle is optional</h3>
-              <p>The original Framer guide notes that the theme switch can be removed from the main assets.</p>
-            </article>
-          </div>
-        </section>
-
         <section class="contact" id="contact" aria-labelledby="contact-title">
           <div class="contact-image">
             <img
@@ -317,6 +255,7 @@
         </div>
       </footer>
     </div>
+    <script src="node_modules/lenis/dist/lenis.min.js"></script>
     <script src="script.js"></script>
   </body>
 </html>

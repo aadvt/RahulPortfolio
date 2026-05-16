@@ -380,6 +380,74 @@ function setupForm() {
   });
 }
 
+function setupHeroMotion() {
+  const heroScene = document.querySelector(".hero-scene");
+  const portraitStage = document.querySelector(".portrait-stage");
+
+  if (!heroScene || !portraitStage || typeof window.Lenis === "undefined") {
+    return;
+  }
+
+  const lenis = new window.Lenis({
+    duration: 1.2,
+    easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+    direction: "vertical",
+    gestureDirection: "vertical",
+    smooth: true,
+    mouseMultiplier: 1,
+    smoothTouch: false,
+    touchMultiplier: 2,
+    infinite: false,
+  });
+
+  const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+
+  if ('scrollRestoration' in history) {
+    history.scrollRestoration = 'manual';
+  }
+
+  const updateHeroMotion = (scroll) => {
+    const sceneTop = heroScene.offsetTop;
+    const totalDistance = Math.max(heroScene.offsetHeight - window.innerHeight, 1);
+    const progress = clamp((scroll - sceneTop) / totalDistance, 0, 1);
+    const flipProgress = clamp(progress / 0.58, 0, 1);
+    const exitProgress = clamp((progress - 0.52) / 0.48, 0, 1);
+    const flipEase = flipProgress * flipProgress * (3 - 2 * flipProgress);
+    const exitEase = exitProgress * exitProgress * (3 - 2 * exitProgress);
+    const exitX = window.innerWidth >= 1200
+      ? Math.max(520, window.innerWidth * 0.46)
+      : Math.max(260, window.innerWidth * 0.34);
+    const exitY = window.innerWidth >= 810 ? -110 : -82;
+    const exitScale = window.innerWidth >= 1200 ? 0.28 : 0.18;
+
+    portraitStage.style.setProperty("--flip-rotation", `${flipEase * 180}deg`);
+    portraitStage.style.setProperty("--flip-shift", `${flipEase * 18}px`);
+    portraitStage.style.setProperty("--stage-shift", `${exitEase * exitY}px`);
+    portraitStage.style.setProperty("--stage-shift-x", `${exitEase * exitX}px`);
+    portraitStage.style.setProperty("--stage-scale", `${1 - exitEase * exitScale}`);
+    portraitStage.style.setProperty("--stage-opacity", `${1 - Math.max(0, (progress - 0.86) / 0.14) * 0.9}`);
+  };
+
+  let rafId = 0;
+  const raf = (time) => {
+    lenis.raf(time);
+    updateHeroMotion(lenis.scroll);
+    rafId = window.requestAnimationFrame(raf);
+  };
+
+  lenis.scrollTo(0, { immediate: true });
+  window.__portfolioLenis = lenis;
+  window.__portfolioHeroMotion = updateHeroMotion;
+
+  updateHeroMotion(0);
+  rafId = window.requestAnimationFrame(raf);
+
+  window.addEventListener("beforeunload", () => {
+    lenis.destroy();
+    window.cancelAnimationFrame(rafId);
+  });
+}
+
 createAccordion(document.querySelector("#services-list"), services);
 createAccordion(document.querySelector("#faq-list"), faqs, {
   className: "faq-item",
@@ -391,3 +459,4 @@ renderProjects();
 renderPosts();
 setupTheme();
 setupForm();
+setupHeroMotion();

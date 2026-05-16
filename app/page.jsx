@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import Lenis from "lenis";
 
 const services = [
   {
@@ -245,6 +246,8 @@ function Accordion({ items, variant = "accordion" }) {
 export default function Home() {
   const [isDark, setIsDark] = useState(false);
   const [submitText, setSubmitText] = useState("Submit");
+  const heroSceneRef = useRef(null);
+  const portraitStageRef = useRef(null);
   const featuredProjects = projects.filter((project) => project.featured).slice(0, 4);
   const moreProjects = projects.filter((project) => !project.featured);
   const pinnedPost = posts.find((post) => post.pinned) || posts[0];
@@ -261,6 +264,69 @@ export default function Home() {
     document.body.classList.toggle("dark", isDark);
     window.localStorage.setItem("duncan-theme", isDark ? "dark" : "light");
   }, [isDark]);
+
+  useEffect(() => {
+    const scene = heroSceneRef.current;
+    const stage = portraitStageRef.current;
+    if (!scene || !stage) return;
+
+    const lenis = new Lenis({
+      duration: 1.5,
+      lerp: 0.1,
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      direction: "vertical",
+      gestureDirection: "vertical",
+      smooth: true,
+      mouseMultiplier: 1,
+      smoothTouch: false,
+      touchMultiplier: 2,
+      infinite: false,
+    });
+
+    const updateHeroMotion = (scroll) => {
+      const sceneTop = scene.offsetTop;
+      const totalDistance = Math.max(scene.offsetHeight - window.innerHeight, 1);
+      const rawProgress = (scroll - sceneTop) / totalDistance;
+      const progress = Math.min(Math.max(rawProgress, 0), 1);
+      const flipProgress = Math.min(Math.max((progress - 0.1) / 0.6, 0), 1); // Flip over 10%-70% of scroll
+      const exitProgress = Math.min(Math.max((progress - 0.1) / 0.9, 0), 1); // Exit starts at 10%
+      const flipEase = flipProgress * flipProgress * (3 - 2 * flipProgress);
+      const exitEase = exitProgress * exitProgress * (3 - 2 * exitProgress);
+      const exitX = window.innerWidth >= 1200
+        ? Math.max(280, window.innerWidth * 0.22)
+        : Math.max(180, window.innerWidth * 0.15);
+      const exitY = window.innerWidth >= 810 ? 580 : 420; 
+      const exitScale = window.innerWidth >= 1200 ? 0.85 : 0.75;
+
+      // Card Animation - Full 180deg flip to show the back side
+      stage.style.setProperty("--flip-rotation", `${flipEase * 180}deg`);
+      stage.style.setProperty("--flip-shift", `${flipEase * 18}px`);
+      stage.style.setProperty("--stage-shift", `${exitEase * exitY}px`);
+      stage.style.setProperty("--stage-shift-x", `${exitEase * exitX}px`);
+      stage.style.setProperty("--stage-scale", `${1 - exitEase * (1 - exitScale)}`);
+      stage.style.setProperty("--stage-opacity", "1"); // Keep it visible in the next section
+
+      // Text Splitting Parallax - Matching Portavia splitting effect
+      const textParallax = progress * 150; // 150px movement
+      scene.style.setProperty("--text-parallax-left", `-${textParallax}px`);
+      scene.style.setProperty("--text-parallax-right", `${textParallax}px`);
+    };
+
+    let rafId = 0;
+    const raf = (time) => {
+      lenis.raf(time);
+      updateHeroMotion(lenis.scroll);
+      rafId = window.requestAnimationFrame(raf);
+    };
+
+    updateHeroMotion(0);
+    rafId = window.requestAnimationFrame(raf);
+
+    return () => {
+      lenis.destroy();
+      if (rafId) window.cancelAnimationFrame(rafId);
+    };
+  }, []);
 
   function handleSubmit(event) {
     event.preventDefault();
@@ -299,41 +365,46 @@ export default function Home() {
       </header>
 
       <main>
-        <section className="hero" id="home" aria-labelledby="hero-title">
-          <div className="hero-copy hero-copy-left">
-            <p className="eyebrow">Duncan Robert</p>
-            <h1 id="hero-title"><span>digital</span></h1>
-          </div>
-          <div className="portrait-stage" aria-label="Portrait card">
-            <div className="portrait-card portrait-card-back">
-              <img src="https://framerusercontent.com/images/VRQgkdWsjawSg1qpCm45HfSY1I.jpeg" alt="" />
+        <div className="hero-scene" id="home" aria-labelledby="hero-title" ref={heroSceneRef}>
+          <section className="hero">
+            <div className="hero-copy hero-copy-left">
+              <p className="eyebrow">Duncan Robert</p>
+              <h1 id="hero-title"><span>digital</span></h1>
             </div>
-            <div className="portrait-card portrait-card-front">
-              <img
-                src="https://framerusercontent.com/images/qrxY8NagVO40NBrdhFEGgFR3PYY.jpg"
-                alt="Portrait of designer Duncan Robert"
-              />
+            <div className="portrait-stage" aria-label="Portrait card" ref={portraitStageRef}>
+              <div className="portrait-card portrait-card-back">
+                <img src="https://framerusercontent.com/images/VRQgkdWsjawSg1qpCm45HfSY1I.jpeg" alt="" />
+              </div>
+              <div className="portrait-card portrait-card-front">
+                <img
+                  src="https://framerusercontent.com/images/qrxY8NagVO40NBrdhFEGgFR3PYY.jpg"
+                  alt="Portrait of designer Duncan Robert"
+                />
+              </div>
+              <div className="circle-badge" aria-hidden="true">
+                <span>Available</span>
+                <span>for work</span>
+              </div>
             </div>
-            <div className="circle-badge" aria-hidden="true">
-              <span>Available</span>
-              <span>for work</span>
+            <div className="hero-copy hero-copy-right">
+              <h1><span>designer</span></h1>
+              <p>I am a US-based digital designer and Framer developer.</p>
             </div>
-          </div>
-          <div className="hero-copy hero-copy-right">
-            <h1><span>designer</span></h1>
-            <p>I am a US-based digital designer and Framer developer.</p>
-          </div>
-        </section>
+          </section>
+        </div>
 
-        <section className="services section-grid" id="services" aria-labelledby="services-title">
-          <div className="section-intro">
+        <section className="services" id="services" aria-labelledby="services-title">
+          <div className="services-content-wrapper">
+            <div className="section-intro">
             <h2 id="services-title">what I can do for you</h2>
             <p>
               As a digital designer, I am a visual storyteller, crafting experiences that connect deeply
               and spark creativity.
             </p>
           </div>
-          <Accordion items={services} />
+            <Accordion items={services} />
+          </div>
+          <div className="services-card-landing"></div>
         </section>
 
         <section className="about section-grid" id="about" aria-labelledby="about-title">

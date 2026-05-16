@@ -1,13 +1,13 @@
 :root {
-  color-scheme: light;
-  --bg: oklch(0.985 0.006 120);
-  --surface: oklch(0.952 0.007 120);
-  --surface-strong: oklch(0.212 0.009 120);
-  --text: oklch(0.23 0.01 120);
-  --muted: oklch(0.55 0.01 120);
-  --line: oklch(0.86 0.01 120);
-  --accent: oklch(0.58 0.18 282);
-  --accent-ink: oklch(0.985 0.006 120);
+  color-scheme: dark;
+  --bg: oklch(0.18 0.008 120);
+  --surface: oklch(0.24 0.008 120);
+  --surface-strong: oklch(0.96 0.006 120);
+  --text: oklch(0.94 0.007 120);
+  --muted: oklch(0.74 0.012 120);
+  --line: oklch(0.34 0.012 120);
+  --accent: oklch(0.88 0.2 128);
+  --accent-ink: oklch(0.18 0.008 120);
   --lime: oklch(0.89 0.2 128);
   --red: oklch(0.64 0.24 24);
   --shadow: 0 22px 70px oklch(0.22 0.02 120 / 0.14);
@@ -38,6 +38,26 @@ body.dark {
 
 html {
   scroll-behavior: smooth;
+}
+
+html.lenis {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+.lenis.lenis-scrolling iframe {
+  pointer-events: none;
 }
 
 body {
@@ -83,7 +103,7 @@ textarea {
 .nav-shell {
   position: fixed;
   z-index: 20;
-  top: 18px;
+  top: 20px;
   left: 50%;
   display: flex;
   align-items: center;
@@ -96,7 +116,7 @@ textarea {
   background: color-mix(in oklch, var(--bg) 86%, transparent);
   box-shadow: var(--shadow);
   transform: translateX(-50%);
-  backdrop-filter: blur(18px);
+  backdrop-filter: blur(10px);
 }
 
 .avatar-chip,
@@ -195,14 +215,22 @@ section {
   margin-inline: auto;
 }
 
-.hero {
+.hero-scene {
   position: relative;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) clamp(220px, 28vw, 340px) minmax(0, 1fr);
+  height: 400vh;
+}
+
+.hero {
+  position: sticky;
+  top: 0;
+  display: flex;
+  justify-content: center;
   align-items: center;
   min-height: 100vh;
-  gap: clamp(20px, 6vw, 96px);
-  padding-block: 118px 70px;
+  width: min(100% - 32px, var(--max));
+  gap: clamp(220px, 19.27vw, 370px);
+  padding: 0;
+  overflow: visible;
 }
 
 .hero h1,
@@ -218,17 +246,42 @@ section {
 }
 
 .hero h1 {
-  font-size: clamp(5rem, 13vw, 9rem);
+  font-size: clamp(5rem, 12vw, 9.75rem);
 }
 
 .hero-copy-left {
+  display: flex;
+  flex: 1 0 0;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-end;
+  max-width: 50%;
+  min-width: 0;
+  height: 100vh;
   text-align: right;
+  overflow: hidden;
+  transform: translateX(var(--text-parallax-left, 0));
+}
+
+.hero-copy-right {
+  display: flex;
+  flex: 1 0 0;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  max-width: 50%;
+  min-width: 0;
+  height: 100vh;
+  overflow: hidden;
+  transform: translateX(var(--text-parallax-right, 0));
 }
 
 .hero-copy-right p {
-  max-width: 28ch;
+  max-width: 90%;
   color: var(--muted);
   font-size: 18px;
+  margin-bottom: 0;
+  margin-left: auto;
 }
 
 .eyebrow {
@@ -240,9 +293,27 @@ section {
 }
 
 .portrait-stage {
-  position: relative;
-  height: clamp(360px, 48vw, 476px);
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 100; /* Ensure it stays above next sections */
+  width: 350px;
+  height: 500px;
   perspective: 1200px;
+  transform-style: preserve-3d;
+  --flip-rotation: 0deg;
+  --flip-lift: 0px;
+  --flip-shift: 0px;
+  --stage-shift: 0px;
+  --stage-shift-x: 0px;
+  --stage-scale: 1;
+  --stage-base-x: 0px;
+  --stage-opacity: 1;
+  opacity: var(--stage-opacity);
+  transform: translate3d(calc(-50% + var(--stage-base-x) + var(--stage-shift-x)), calc(-50% + var(--stage-shift)), 0) scale(var(--stage-scale));
+  transform-origin: center center;
+  transition: transform 90ms linear;
+  will-change: transform;
 }
 
 .portrait-card {
@@ -252,25 +323,29 @@ section {
   border-radius: var(--radius);
   box-shadow: var(--shadow);
   transform-origin: center;
+  backface-visibility: hidden;
+  transform-style: preserve-3d;
+  will-change: transform;
 }
 
 .portrait-card-back {
-  transform: rotate(-4deg) translate(-14px, 16px);
+  transform: rotateY(calc(var(--flip-rotation) + 180deg));
 }
 
 .portrait-card-front {
-  transform: rotate(3deg);
-  transition: transform 500ms cubic-bezier(0.19, 1, 0.22, 1);
+  z-index: 2;
+  transform: rotateY(var(--flip-rotation)) translate3d(0, calc(var(--flip-lift) + var(--flip-shift)), 1px);
+  transition: transform 90ms linear;
 }
 
-.portrait-stage:hover .portrait-card-front {
-  transform: rotate(1deg) translateY(-14px);
+.portrait-stage:hover {
+  --flip-lift: -14px;
 }
 
 .circle-badge {
   position: absolute;
-  right: calc(100% - 54px);
-  bottom: -18px;
+  top: 99%;
+  left: 1%;
   display: grid;
   place-items: center;
   width: 120px;
@@ -284,6 +359,7 @@ section {
   line-height: 1;
   text-transform: uppercase;
   box-shadow: var(--shadow);
+  transform: translate(-50%, -50%);
 }
 
 .section-grid {
@@ -291,6 +367,38 @@ section {
   grid-template-columns: minmax(250px, 0.9fr) minmax(0, 1.1fr);
   gap: clamp(42px, 8vw, 100px);
   padding-block: clamp(90px, 12vw, 150px);
+}
+
+.services {
+  display: grid;
+  grid-template-columns: 1fr 350px; /* Space for the card on the right */
+  gap: 60px;
+  width: min(100%, var(--max));
+  margin-inline: auto;
+  padding: 0 40px clamp(90px, 12vw, 150px);
+  overflow: visible;
+}
+
+.services-content-wrapper {
+  display: grid;
+  gap: 40px;
+}
+
+.services .section-intro {
+  display: grid;
+  gap: 40px;
+  width: 600px;
+  max-width: 100%;
+}
+
+.services .section-intro h2 {
+  font-size: clamp(5.5rem, 9vw, 9.75rem);
+  line-height: 1;
+  max-width: 500px;
+}
+
+.services .section-intro p {
+  max-width: 500px;
 }
 
 .section-intro {
@@ -815,7 +923,7 @@ section {
   gap: 18px;
 }
 
-@media (max-width: 920px) {
+@media (max-width: 768px) {
   .nav-shell {
     width: min(calc(100% - 20px), 620px);
   }
@@ -829,19 +937,30 @@ section {
   }
 
   .hero {
+    display: grid;
     grid-template-columns: 1fr;
     min-height: auto;
+    width: min(100% - 24px, var(--max));
+    gap: 26px;
     padding-top: 110px;
   }
 
   .hero-copy-left,
   .hero-copy-right {
+    display: block;
+    max-width: none;
+    height: auto;
     text-align: left;
   }
 
   .portrait-stage {
-    width: min(80vw, 340px);
+    position: relative;
+    top: auto;
+    left: auto;
+    width: min(72vw, 260px);
+    height: min(100.8vw, 364px);
     justify-self: center;
+    transform: translate3d(var(--stage-shift-x), var(--stage-shift), 0) scale(var(--stage-scale));
   }
 
   .section-grid,
