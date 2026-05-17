@@ -430,8 +430,40 @@ export default function Home() {
             <div className="hero-brand-main">
               RAHUL<span className="brand-reg">®</span>
             </div>
+            <div className="hero-brand-sub">FILM <span className="dot">•</span> & <span className="dot">•</span> EDIT</div>
           </div>
           <section className="hero">
+            <div className="hero-abstract hero-abstract-top-right">
+              <span className="dot-indicator"></span> Available for projects
+              <br/><span className="sub-date">EARLY FEB 2025</span>
+            </div>
+            <div className="hero-abstract hero-abstract-right">
+              <h2 className="beyond">Raw Motion.</h2>
+              <h2 className="vision">Cut to<br/>Perfection.</h2>
+            </div>
+            
+            <div className="hero-abstract hero-abstract-bottom-left">
+              <p className="hero-vision-text">
+                <span className="slash">/</span> We direct commercials, music videos,<br/>
+                and documentaries <span className="hand-text" style={{fontSize: '1.1em'}}>cutting stories with</span><br/>
+                rhythm, grit, and visual weight.
+              </p>
+              
+              <div className="trusted-by">
+                <span className="trusted-label">TRUSTED BY:</span>
+                <div className="trusted-logos">
+                   <span className="logo-placeholder">Logoipsum</span>
+                   <span className="logo-placeholder">Logoipsum</span>
+                   <span className="logo-placeholder">Logoipsum</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="hero-abstract hero-abstract-bottom-right">
+                <a href="#projects" className="abstract-btn">WORK <span className="arrow">↘</span></a>
+                <a href="#contact" className="abstract-btn">PRICING <span className="arrow">↘</span></a>
+            </div>
+
             <div className="portrait-stage" aria-label="Portrait card" ref={portraitStageRef}>
               <div className="portrait-card portrait-card-back">
                 <img src="/images/IMG_6471.jpg" alt="Back portrait" />
