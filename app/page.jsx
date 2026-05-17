@@ -257,7 +257,7 @@ function FeaturedProjectCard({ project, index, total, scrollYProgress }) {
 
   const targetScale = 1 - ((total - 1 - index) * 0.05);
   const range = [index * (1 / total), 1];
-  
+
   const scaleTransform = useTransform(scrollYProgress, range, [1, targetScale]);
   const overlayRange = [index * (1 / total), (index + 1) * (1 / total)];
   const opacityTransform = useTransform(scrollYProgress, overlayRange, [0, 0.6]);
@@ -434,12 +434,12 @@ export default function Home() {
             </div>
             <div className="portrait-stage" aria-label="Portrait card" ref={portraitStageRef}>
               <div className="portrait-card portrait-card-back">
-                <img src="https://framerusercontent.com/images/VRQgkdWsjawSg1qpCm45HfSY1I.jpeg" alt="" />
+                <img src="/images/IMG_5775.PNG" alt="" />
               </div>
               <div className="portrait-card portrait-card-front">
                 <img
-                  src="https://framerusercontent.com/images/qrxY8NagVO40NBrdhFEGgFR3PYY.jpg"
-                  alt="Portrait of designer Duncan Robert"
+                  src="/images/IMG_5775.PNG"
+                  alt="Portrait of designer Rahul"
                 />
               </div>
               <div className="circle-badge" aria-hidden="true">
@@ -457,12 +457,12 @@ export default function Home() {
         <section className="services" id="services" aria-labelledby="services-title">
           <div className="services-content-wrapper">
             <div className="section-intro">
-            <h2 id="services-title">what I can do for you</h2>
-            <p>
-              As a digital designer, I am a visual storyteller, crafting experiences that connect deeply
-              and spark creativity.
-            </p>
-          </div>
+              <h2 id="services-title">what I can do for you</h2>
+              <p>
+                As a digital designer, I am a visual storyteller, crafting experiences that connect deeply
+                and spark creativity.
+              </p>
+            </div>
             <Accordion items={services} />
           </div>
           <div className="services-card-landing"></div>
@@ -619,8 +619,8 @@ export default function Home() {
         <section className="contact" id="contact" aria-labelledby="contact-title">
           <div className="contact-image">
             <img
-              src="https://framerusercontent.com/images/qrxY8NagVO40NBrdhFEGgFR3PYY.jpg"
-              alt="Duncan Robert portrait"
+              src="/images/IMG_5775.PNG"
+              alt="Rahul portrait"
             />
             <div className="circle-badge" aria-hidden="true">
               <span>Let us</span>
@@ -668,6 +668,23 @@ export default function Home() {
           <a href="https://dribbble.com/">Dribbble</a>
         </div>
       </footer>
+
+      {/* SVG Filter to dynamically map the bright red in the custom portrait to #C74A57 */}
+      <svg style={{ display: 'none' }}>
+        <defs>
+          <filter id="red-sync">
+            <feColorMatrix
+              type="matrix"
+              values="
+                0.78 0 0 0 0
+                0.29 0 0 0 0
+                0.34 0 0 0 0
+                0    0 0 1 0
+              "
+            />
+          </filter>
+        </defs>
+      </svg>
     </div>
   );
 }
