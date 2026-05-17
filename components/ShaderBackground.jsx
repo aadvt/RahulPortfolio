@@ -1,214 +1,194 @@
 "use client";
-import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { useMemo, useRef } from "react";
-import * as THREE from "three";
 
-const vertexShader = `
-  varying vec2 vUv;
-  void main() {
-    vUv = uv;
-    gl_Position = vec4(position, 1.0);
-  }
-`;
+import React, { useEffect, useRef } from 'react';
 
-const fragmentShader = `
-    precision highp float;
-    varying vec2 vUv;
-    uniform float u_time;
-    uniform vec3 u_resolution;
-    uniform vec3 u_color;
-    uniform float u_color_opacity;
-    uniform vec3 u_bg_color;
-    uniform float u_bg_opacity;
-    uniform sampler2D u_overlay;
-    uniform vec3 u_overlay_color;
-    uniform float u_shadow_strength;
-    uniform float u_border_width;
+// --- FRAGMENT SHADER ---
+const fragmentShaderSource = `#version 300 es
+precision highp float;
+out vec4 O;
+uniform float time;
+uniform vec2 resolution;
+uniform vec3 u_color;
+
+#define FC gl_FragCoord.xy
+#define R resolution
+#define T (time+660.)
+
+float rnd(vec2 p){p=fract(p*vec2(12.9898,78.233));p+=dot(p,p+34.56);return fract(p.x*p.y);}
+float noise(vec2 p){vec2 i=floor(p),f=fract(p),u=f*f*(3.-2.*f);return mix(mix(rnd(i),rnd(i+vec2(1,0)),u.x),mix(rnd(i+vec2(0,1)),rnd(i+1.),u.x),u.y);}
+float fbm(vec2 p){float t=.0,a=1.;for(int i=0;i<5;i++){t+=a*noise(p);p*=mat2(1,-1.2,.2,1.2)*2.;a*=.5;}return t;}
+
+void main(){
+  vec2 uv=(FC-.5*R)/R.y;
+  vec3 col=vec3(1);
+  uv.x+=.25;
+  uv*=vec2(2,1);
+
+  float n=fbm(uv*.28-vec2(T*.01,0));
+  n=noise(uv*3.+n*2.);
+
+  col.r-=fbm(uv+vec2(0,T*.015)+n);
+  col.g-=fbm(uv*1.003+vec2(0,T*.015)+n+.003);
+  col.b-=fbm(uv*1.006+vec2(0,T*.015)+n+.006);
+
+  col=mix(col, u_color, dot(col,vec3(.21,.71,.07)));
+
+  col=mix(vec3(.08),col,min(time*.1,1.));
+  col=clamp(col,.08,1.);
+  O=vec4(col,1);
+}`;
+
+// --- RENDERER CLASS ---
+class Renderer {
+  constructor(canvas, fragmentSource) {
+    this.vertexSrc = "#version 300 es\nprecision highp float;\nin vec4 position;\nvoid main(){gl_Position=position;}";
+    this.vertices = [-1, 1, -1, -1, 1, 1, 1, -1];
     
+    this.canvas = canvas;
+    this.gl = canvas.getContext("webgl2");
+    this.program = null;
+    this.vs = null;
+    this.fs = null;
+    this.buffer = null;
+    this.color = [0.5, 0.5, 0.5]; // Default to gray
 
-    float patternThreshold(vec2 fragCoord, float gray) {
-      float scale = 4.0;
-      
-      int x = int(mod(floor(fragCoord.x / scale), 4.0));
-      int y = int(mod(floor(fragCoord.y / scale), 4.0));
-      int idx = x + y * 4;
-      float bayer[16];
-      bayer[0]=0.0; bayer[1]=8.0; bayer[2]=2.0; bayer[3]=10.0;
-      bayer[4]=12.0; bayer[5]=4.0; bayer[6]=14.0; bayer[7]=6.0;
-      bayer[8]=3.0; bayer[9]=11.0; bayer[10]=1.0; bayer[11]=9.0;
-      bayer[12]=15.0; bayer[13]=7.0; bayer[14]=13.0; bayer[15]=5.0;
-      return step(bayer[idx] / 16.0, gray);
+    this.setup(fragmentSource);
+    this.init();
+  }
+  
+  updateColor(newColor) {
+    this.color = newColor;
+  }
+
+  updateScale() {
+    if (!this.gl) return;
+    const dpr = Math.max(1, window.devicePixelRatio);
+    const { innerWidth: width, innerHeight: height } = window;
+    this.canvas.width = width * dpr;
+    this.canvas.height = height * dpr;
+    this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+  }
+
+  compile(shader, source) {
+    const gl = this.gl;
+    gl.shaderSource(shader, source);
+    gl.compileShader(shader);
+    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+      console.error(`Shader compilation error: ${gl.getShaderInfoLog(shader)}`);
     }
+  }
 
-    float hash(vec2 p) {
-      vec3 p3 = fract(vec3(p.xyx) * 0.1031);
-      p3 += dot(p3, p3.yzx + 33.33);
-      return fract((p3.x + p3.y) * p3.z);
+  reset() {
+    const { gl, program, vs, fs } = this;
+    if (!gl || !program) return;
+    if (vs) { gl.detachShader(program, vs); gl.deleteShader(vs); }
+    if (fs) { gl.detachShader(program, fs); gl.deleteShader(fs); }
+    gl.deleteProgram(program);
+    this.program = null;
+  }
+
+  setup(fragmentSource) {
+    const gl = this.gl;
+    if (!gl) return;
+    this.vs = gl.createShader(gl.VERTEX_SHADER);
+    this.fs = gl.createShader(gl.FRAGMENT_SHADER);
+    const program = gl.createProgram();
+    if (!this.vs || !this.fs || !program) return;
+    this.compile(this.vs, this.vertexSrc);
+    this.compile(this.fs, fragmentSource);
+    this.program = program;
+    gl.attachShader(this.program, this.vs);
+    gl.attachShader(this.program, this.fs);
+    gl.linkProgram(this.program);
+    if (!gl.getProgramParameter(this.program, gl.LINK_STATUS)) {
+      console.error(`Program linking error: ${gl.getProgramInfoLog(this.program)}`);
     }
+  }
 
-    float noise(vec2 p) {
-      vec2 i = floor(p);
-      vec2 f = fract(p);
-      f = f * f * (3.0 - 2.0 * f);
-      float a = hash(i);
-      float b = hash(i + vec2(1.0, 0.0));
-      float c = hash(i + vec2(0.0, 1.0));
-      float d = hash(i + vec2(1.0, 1.0));
-      return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
-    }
+  init() {
+    const { gl, program } = this;
+    if (!gl || !program) return;
+    this.buffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.vertices), gl.STATIC_DRAW);
+    const position = gl.getAttribLocation(program, "position");
+    gl.enableVertexAttribArray(position);
+    gl.vertexAttribPointer(position, 2, gl.FLOAT, false, 0, 0);
+    Object.assign(program, {
+      resolution: gl.getUniformLocation(program, "resolution"),
+      time: gl.getUniformLocation(program, "time"),
+      u_color: gl.getUniformLocation(program, "u_color"),
+    });
+  }
 
-    float fbm(vec2 p) {
-      float val = 0.0;
-      float amp = 0.5;
-      float freq = 1.0;
-      for (int i = 0; i < 5; i++) {
-        val += amp * noise(p * freq);
-        freq *= 2.0;
-        amp *= 0.5;
-        p += vec2(1.7, 9.2);
-      }
-      return val;
-    }
-
-    void mainImage(out vec4 col, in vec2 pc) {
-      float time = u_time * 0.40;
-      vec2 aspect = vec2(u_resolution.x / u_resolution.y, 1.0);
-      vec2 uv = pc / u_resolution.xy * aspect;
-      float ns = 3.0;
-      float wi = 4.0;
-
-      vec2 q = vec2(
-        fbm(uv * ns + vec2(0.0, 0.0) + time * 0.3),
-        fbm(uv * ns + vec2(5.2, 1.3) - time * 0.2)
-      );
-      vec2 r = vec2(
-        fbm(uv * ns + wi * q + vec2(1.7, 9.2) + time * 0.15),
-        fbm(uv * ns + wi * q + vec2(8.3, 2.8) - time * 0.25)
-      );
-      float f = fbm(uv * ns + wi * r);
-
-      float ridges = abs(sin(f * 12.0 + time));
-      ridges = pow(ridges, 0.6);
-      float veins = length(q - r) * 1.8;
-      veins = smoothstep(0.0, 1.5, veins);
-      float pattern = mix(ridges, veins, 0.4 + 0.2 * sin(time * 0.7));
-      pattern = pow(pattern, 1.2);
-      pattern = smoothstep(0.1, 0.95, pattern);
-      col = vec4(vec3(pattern), 1.0);
-    }
-
-    vec2 overlayUV(vec2 uv, float ar) {
-      vec2 o = uv;
-      if (ar > 1.0) { o.x = 0.5 + (uv.x - 0.5) * ar; }
-      else { o.y = 0.5 + (uv.y - 0.5) / ar; }
-      return o;
-    }
-
-    float sampleMask(vec2 oUv) {
-      if (oUv.x < 0.02 || oUv.x > 0.98 || oUv.y < 0.02 || oUv.y > 0.98) return 0.0;
-      vec4 s = texture2D(u_overlay, oUv);
-      return dot(s.rgb, vec3(0.299, 0.587, 0.114)) * s.a;
-    }
-
-    float blurShadow(vec2 oUv) {
-      float sum = 0.0;
-      for (int x = -5; x <= 5; x++) {
-        for (int y = -5; y <= 5; y++) {
-          vec2 off = vec2(float(x) * 0.004, float(y) * 0.004);
-          off.x += 0.008;
-          off.y += 0.012;
-          sum += step(0.01, sampleMask(oUv + off));
-        }
-      }
-      return sum / 121.0;
-    }
-
-    void main() {
-      vec2 fragCoord = vUv * u_resolution.xy;
-      float screenAR = u_resolution.x / u_resolution.y;
-      vec2 oUv = overlayUV(vUv, screenAR);
-      float mask = smoothstep(0.01, 0.05, sampleMask(oUv));
-      float shadow = blurShadow(oUv);
-      float shadowOnly = clamp(shadow - mask, 0.0, 1.0);
-
-      vec4 baseRaw;
-      mainImage(baseRaw, fragCoord);
-      float baseGray = dot(baseRaw.rgb, vec3(0.299, 0.587, 0.114));
-      float baseBw = patternThreshold(fragCoord, baseGray);
-      vec3 baseCol = mix(u_bg_color, u_color, baseBw);
-
-      vec3 shadowed = baseCol * mix(1.0, 0.3, shadowOnly * u_shadow_strength);
-
-      vec2 innerOffset = vec2(347.0, 521.0);
-      vec4 innerRaw;
-      mainImage(innerRaw, fragCoord + innerOffset);
-      float innerGray = dot(innerRaw.rgb, vec3(0.299, 0.587, 0.114));
-      float innerBw = patternThreshold(fragCoord, innerGray);
-      vec3 innerCol = mix(u_bg_color, u_color, innerBw);
-
-      float bRadius = u_border_width * 0.004;
-      float edgeMask = 0.0;
-      for (int x = -2; x <= 2; x++) {
-        for (int y = -2; y <= 2; y++) {
-          vec2 off = vec2(float(x), float(y)) * bRadius;
-          edgeMask += step(0.01, sampleMask(oUv + off));
-        }
-      }
-      edgeMask = edgeMask / 25.0;
-      float edge = mask - edgeMask;
-      float edgeOuter = edgeMask - mask;
-      float edgeGlow = max(abs(edge), abs(edgeOuter));
-      edgeGlow = smoothstep(0.0, 0.3, edgeGlow);
-
-      vec3 innerLit = innerCol + 0.06;
-
-      vec3 result = mix(shadowed, innerLit, mask);
-      result = mix(result, u_color * 1.4 + 0.1, edgeGlow * u_border_width * 0.5);
-      vec4 col = vec4(result, 1.0);
-      
-      gl_FragColor = col;
-    }
-  `;
-
-function ShaderPlane() {
-  const meshRef = useRef(null);
-  const { size } = useThree();
-  const uniforms = useMemo(() => ({
-    u_time: { value: 0 },
-    u_resolution: { value: new THREE.Vector3(1, 1, 1) },
-    u_color: { value: new THREE.Color("#FC5050") },
-    u_color_opacity: { value: 1.00 },
-    u_bg_color: { value: new THREE.Color("#000000") },
-    u_bg_opacity: { value: 1.00 },
-  }), []);
-
-  useFrame((state) => {
-    if (!meshRef.current) return;
-    const mat = meshRef.current.material;
-    mat.uniforms.u_time.value = state.clock.elapsedTime * 0.5;
-    mat.uniforms.u_resolution.value.set(size.width, size.height, 1.0);
-  });
-
-  return (
-    <mesh ref={meshRef}>
-      <planeGeometry args={[2, 2]} />
-      <shaderMaterial
-        vertexShader={vertexShader}
-        fragmentShader={fragmentShader}
-        uniforms={uniforms}
-        depthTest={false}
-        depthWrite={false}
-      />
-    </mesh>
-  );
+  render(now = 0) {
+    const { gl, program, buffer, canvas } = this;
+    if (!gl || !program || !gl.isProgram(program)) return;
+    gl.clearColor(0, 0, 0, 1);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.useProgram(program);
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+    gl.uniform2f(program.resolution, canvas.width, canvas.height);
+    gl.uniform1f(program.time, now * 1e-3);
+    gl.uniform3fv(program.u_color, this.color);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+  }
 }
 
-export default function ShaderBackground({ className }) {
-  return (
-    <div className={className} style={{ width: "100%", height: "100%" }}>
-      <Canvas>
-        <ShaderPlane />
-      </Canvas>
-    </div>
-  );
+// --- UTILITY FUNCTION ---
+const hexToRgb = (hex) => {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result
+      ? [
+          parseInt(result[1], 16) / 255,
+          parseInt(result[2], 16) / 255,
+          parseInt(result[3], 16) / 255,
+        ]
+      : null;
+};
+
+// --- REACT COMPONENT ---
+export default function ShaderBackground({ className, smokeColor = "#FC5050" }) {
+    const canvasRef = useRef(null);
+    const rendererRef = useRef(null);
+
+    useEffect(() => {
+        if (!canvasRef.current) return;
+        const canvas = canvasRef.current;
+        const renderer = new Renderer(canvas, fragmentShaderSource);
+        rendererRef.current = renderer;
+        
+        const handleResize = () => renderer.updateScale();
+        handleResize();
+        window.addEventListener('resize', handleResize);
+        
+        let animationFrameId;
+        const loop = (now) => {
+            renderer.render(now);
+            animationFrameId = requestAnimationFrame(loop);
+        };
+        loop(0);
+
+        return () => {
+            window.removeEventListener('resize', handleResize);
+            cancelAnimationFrame(animationFrameId);
+            renderer.reset(); 
+        };
+    }, []);
+    
+    useEffect(() => {
+        const renderer = rendererRef.current;
+        if (renderer) {
+            const rgbColor = hexToRgb(smokeColor);
+            if (rgbColor) {
+                renderer.updateColor(rgbColor);
+            }
+        }
+    }, [smokeColor]);
+
+    return (
+        <div className={className} style={{ width: "100%", height: "100%" }}>
+            <canvas ref={canvasRef} style={{ width: "100%", height: "100%", display: "block" }} />
+        </div>
+    );
 }
