@@ -382,13 +382,13 @@ export default function Home() {
                 />
               </div>
               <div className="circle-badge" aria-hidden="true">
-                <span>Available</span>
-                <span>for work</span>
+                <span>100%</span>
+                <span>raw</span>
               </div>
             </div>
             <div className="hero-copy hero-copy-right">
               <h1><span>designer</span></h1>
-              <p>I am a US-based digital designer and Framer developer.</p>
+              <p>I am a US-based <span className="hand-text">creative</span> and Framer developer.</p>
             </div>
           </section>
         </div>
@@ -409,15 +409,15 @@ export default function Home() {
 
         <section className="about section-grid" id="about" aria-labelledby="about-title">
           <div className="section-intro">
-            <p className="eyebrow">Duncan Robert</p>
+            <p className="eyebrow">Who am I?</p>
             <h2 id="about-title">About me</h2>
             <p>
-              I am a digital designer and Framer developer passionate about crafting meaningful,
+              I am a digital designer and Framer developer passionate about crafting <span className="hand-text">unforgettable</span>,
               user-centered experiences.
             </p>
             <p>
               With a strong foundation in visual design and a deep understanding of interactive systems,
-              I bring ideas to life through thoughtful design, smooth animations, and responsive layouts.
+              I bring ideas to life through thoughtful design, chaotic-yet-organized layouts, and expressive typography.
             </p>
           </div>
           <div className="about-panel">
