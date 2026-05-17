@@ -29,13 +29,12 @@ void main(){
   vec2 m = u_mouse;
   
   // Custom Fluid Oil-Paint-in-Water Warp calculated in isotropic space
-  // This guarantees a perfectly round cursor impact area without horizontal stretching!
   vec2 diff = uv - m;
   float d = length(diff);
   
   // Swirl shear force rotation driven strictly by velocity
-  // exp(-d * 12.0) confines the impact area to a tight, local radius around the cursor
-  float swirl = u_velocity * 3.5 * exp(-d * 12.0);
+  // exp(-d * 10.0) confines the impact area to a tight circular radius
+  float swirl = u_velocity * 4.0 * exp(-d * 10.0);
   float c = cos(swirl);
   float s = sin(swirl);
   mat2 rot = mat2(c, -s, s, c);
@@ -50,12 +49,14 @@ void main(){
   uv.x+=.25;
   uv*=vec2(2,1);
 
-  float n=fbm(uv*.28-vec2(T*.01,0));
-  n=noise(uv*3.+n*2.);
+  // Sweep the background smoke organically with increased multi-directional velocities
+  float n=fbm(uv*.28-vec2(T*.035, T*.015));
+  n=noise(uv*1.8+n*2.);
 
-  col.r-=fbm(uv+vec2(0,T*.015)+n);
-  col.g-=fbm(uv*1.003+vec2(0,T*.015)+n+.003);
-  col.b-=fbm(uv*1.006+vec2(0,T*.015)+n+.006);
+  // Subtraction scaling (* 0.76) preserves rich midtones and keeps the smoke vibrant (less pitch black)
+  col.r-=fbm(uv+vec2(T*.02, T*.045)+n)*0.76;
+  col.g-=fbm(uv*1.003+vec2(T*.02, T*.045)+n+.003)*0.76;
+  col.b-=fbm(uv*1.006+vec2(T*.02, T*.045)+n+.006)*0.76;
 
   col=mix(col, u_color, dot(col,vec3(.21,.71,.07)));
 
