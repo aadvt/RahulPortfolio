@@ -9,6 +9,8 @@ out vec4 O;
 uniform float time;
 uniform vec2 resolution;
 uniform vec3 u_color;
+uniform vec2 u_mouse;
+uniform float u_velocity; // Responsive mouse velocity
 
 #define FC gl_FragCoord.xy
 #define R resolution
@@ -19,8 +21,32 @@ float noise(vec2 p){vec2 i=floor(p),f=fract(p),u=f*f*(3.-2.*f);return mix(mix(rn
 float fbm(vec2 p){float t=.0,a=1.;for(int i=0;i<5;i++){t+=a*noise(p);p*=mat2(1,-1.2,.2,1.2)*2.;a*=.5;}return t;}
 
 void main(){
+  // Normal coordinate space
   vec2 uv=(FC-.5*R)/R.y;
   vec3 col=vec3(1);
+
+  // Smooth mouse coordinates mapping (in isotropic/unscaled screen space)
+  vec2 m = u_mouse;
+  
+  // Custom Fluid Oil-Paint-in-Water Warp calculated in isotropic space
+  // This guarantees a perfectly round cursor impact area without horizontal stretching!
+  vec2 diff = uv - m;
+  float d = length(diff);
+  
+  // Swirl shear force rotation driven strictly by velocity
+  // exp(-d * 12.0) confines the impact area to a tight, local radius around the cursor
+  float swirl = u_velocity * 3.5 * exp(-d * 12.0);
+  float c = cos(swirl);
+  float s = sin(swirl);
+  mat2 rot = mat2(c, -s, s, c);
+  
+  // Apply swirl rotation and velocity-responsive micro-ripple in isotropic space
+  uv = m + rot * diff;
+  
+  float ripple = sin(d * 42.0 - time * 8.0) * (u_velocity * 0.16) * exp(-d * 10.0);
+  uv += (diff / (d + 0.0001)) * ripple;
+
+  // Post-interaction offset and stretch for noise texture lookup
   uv.x+=.25;
   uv*=vec2(2,1);
 
@@ -51,6 +77,12 @@ class Renderer {
     this.fs = null;
     this.buffer = null;
     this.color = [0.5, 0.5, 0.5]; // Default to gray
+    
+    // Smooth lerping mouse coordinates
+    this.mouse = [0.0, 0.0];
+    this.targetMouse = [0.0, 0.0];
+    this.velocity = 0.0;
+    this.targetVelocity = 0.0;
 
     this.setup(fragmentSource);
     this.init();
@@ -58,6 +90,13 @@ class Renderer {
   
   updateColor(newColor) {
     this.color = newColor;
+  }
+
+  updateMouse(x, y, speed) {
+    this.targetMouse[0] = x;
+    this.targetMouse[1] = y;
+    // Increase target velocity based on mouse speed, capped at a maximum of 1.5
+    this.targetVelocity = Math.min(1.5, this.targetVelocity + speed * 6.0);
   }
 
   updateScale() {
@@ -118,12 +157,23 @@ class Renderer {
       resolution: gl.getUniformLocation(program, "resolution"),
       time: gl.getUniformLocation(program, "time"),
       u_color: gl.getUniformLocation(program, "u_color"),
+      u_mouse: gl.getUniformLocation(program, "u_mouse"),
+      u_velocity: gl.getUniformLocation(program, "u_velocity"),
     });
   }
 
   render(now = 0) {
     const { gl, program, buffer, canvas } = this;
     if (!gl || !program || !gl.isProgram(program)) return;
+    
+    // Smooth lerp mouse coordinates
+    this.mouse[0] += (this.targetMouse[0] - this.mouse[0]) * 0.08;
+    this.mouse[1] += (this.targetMouse[1] - this.mouse[1]) * 0.08;
+    
+    // Smooth lerp velocity and exponential decay when still
+    this.velocity += (this.targetVelocity - this.velocity) * 0.1;
+    this.targetVelocity *= 0.92;
+
     gl.clearColor(0, 0, 0, 1);
     gl.clear(gl.COLOR_BUFFER_BIT);
     gl.useProgram(program);
@@ -131,6 +181,8 @@ class Renderer {
     gl.uniform2f(program.resolution, canvas.width, canvas.height);
     gl.uniform1f(program.time, now * 1e-3);
     gl.uniform3fv(program.u_color, this.color);
+    gl.uniform2f(program.u_mouse, this.mouse[0], this.mouse[1]);
+    gl.uniform1f(program.u_velocity, this.velocity);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
   }
 }
@@ -148,7 +200,7 @@ const hexToRgb = (hex) => {
 };
 
 // --- REACT COMPONENT ---
-export default function ShaderBackground({ className, smokeColor = "#FC5050" }) {
+export default function ShaderBackground({ className, smokeColor = "#E3142A" }) {
     const canvasRef = useRef(null);
     const rendererRef = useRef(null);
 
@@ -162,6 +214,24 @@ export default function ShaderBackground({ className, smokeColor = "#FC5050" }) 
         handleResize();
         window.addEventListener('resize', handleResize);
         
+        const handleMouseMove = (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            // Map coordinates precisely relative to WebGL2 viewport aspect ratio
+            const mx = (x - rect.width * 0.5) / rect.height;
+            const my = -(y - rect.height * 0.5) / rect.height;
+            
+            // Calculate cursor speed relative to previous position
+            const dx = mx - renderer.targetMouse[0];
+            const dy = my - renderer.targetMouse[1];
+            const speed = Math.sqrt(dx * dx + dy * dy);
+            
+            renderer.updateMouse(mx, my, speed);
+        };
+        window.addEventListener('mousemove', handleMouseMove);
+        
         let animationFrameId;
         const loop = (now) => {
             renderer.render(now);
@@ -171,6 +241,7 @@ export default function ShaderBackground({ className, smokeColor = "#FC5050" }) 
 
         return () => {
             window.removeEventListener('resize', handleResize);
+            window.removeEventListener('mousemove', handleMouseMove);
             cancelAnimationFrame(animationFrameId);
             renderer.reset(); 
         };
