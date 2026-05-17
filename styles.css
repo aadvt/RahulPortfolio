@@ -357,7 +357,7 @@ section {
   will-change: transform;
 }
 
-.portrait-card img,
+.portrait-card-front img,
 .contact-image img {
   filter: url(#red-sync);
 }

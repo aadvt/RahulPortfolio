@@ -426,7 +426,7 @@ export default function Home() {
 
       <main>
         <div className="hero-scene" id="home" aria-labelledby="hero-title" ref={heroSceneRef}>
-          <ShaderBackground className="hero-bg" />
+          <ShaderBackground className="hero-bg" smokeColor="#C74A57" />
           <section className="hero">
             <div className="hero-copy hero-copy-left">
               <p className="eyebrow">Duncan Robert</p>
@@ -434,7 +434,7 @@ export default function Home() {
             </div>
             <div className="portrait-stage" aria-label="Portrait card" ref={portraitStageRef}>
               <div className="portrait-card portrait-card-back">
-                <img src="/images/IMG_5775.PNG" alt="" />
+                <img src="/images/IMG_6471.jpg" alt="Back portrait" />
               </div>
               <div className="portrait-card portrait-card-front">
                 <img
