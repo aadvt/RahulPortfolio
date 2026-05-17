@@ -9,10 +9,12 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@react-three/fiber": "^9.6.1",
+    "framer-motion": "^12.38.0",
+    "lenis": "^1.0.42",
     "next": "latest",
     "react": "latest",
     "react-dom": "latest",
-    "lenis": "^1.0.42"
-  },
-  "devDependencies": {}
+    "three": "^0.184.0"
+  }
 }

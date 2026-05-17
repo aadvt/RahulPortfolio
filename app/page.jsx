@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import Lenis from "lenis";
+import { motion, useScroll, useTransform } from "framer-motion";
+import ShaderBackground from "../components/ShaderBackground";
 
 const services = [
   {
@@ -243,27 +245,85 @@ function Accordion({ items, variant = "accordion" }) {
   );
 }
 
+function FeaturedProjectCard({ project, index, total, scrollYProgress }) {
+  const [isDesktop, setIsDesktop] = useState(false);
+
+  useEffect(() => {
+    setIsDesktop(window.innerWidth > 810);
+    const handleResize = () => setIsDesktop(window.innerWidth > 810);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  const targetScale = 1 - ((total - 1 - index) * 0.05);
+  const range = [index * (1 / total), 1];
+  
+  const scaleTransform = useTransform(scrollYProgress, range, [1, targetScale]);
+  const overlayRange = [index * (1 / total), (index + 1) * (1 / total)];
+  const opacityTransform = useTransform(scrollYProgress, overlayRange, [0, 0.6]);
+
+  const scale = isDesktop ? scaleTransform : 1;
+  const opacity = isDesktop ? opacityTransform : 0;
+
+  return (
+    <div className="featured-card-wrapper">
+      <motion.article
+        className="featured-card"
+        style={isDesktop ? {
+          scale,
+          position: "sticky",
+          top: `calc(120px + ${index * 24}px)`,
+          transformOrigin: "top center",
+        } : {}}
+      >
+        <a className="featured-media" href="#contact" aria-label={`Discuss ${project.title}`} style={{ position: "relative", display: "block" }}>
+          <img src={project.image} alt={project.title} loading="lazy" />
+          {isDesktop && (
+            <motion.div
+              className="card-dimmer"
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: "rgba(0, 0, 0, 1)",
+                opacity: index < total - 1 ? opacity : 0,
+                pointerEvents: "none",
+                zIndex: 2,
+              }}
+            />
+          )}
+        </a>
+        <div className="featured-copy">
+          <MetaRow items={[project.category, project.year, project.client]} />
+          <h3>{project.title}</h3>
+          <p>{project.description}</p>
+        </div>
+      </motion.article>
+    </div>
+  );
+}
+
 export default function Home() {
-  const [isDark, setIsDark] = useState(false);
+  const [isDark, setIsDark] = useState(true);
   const [submitText, setSubmitText] = useState("Submit");
   const heroSceneRef = useRef(null);
   const portraitStageRef = useRef(null);
+  const projectsContainerRef = useRef(null);
+  const { scrollYProgress } = useScroll({
+    target: projectsContainerRef,
+    offset: ["start start", "end end"]
+  });
   const featuredProjects = projects.filter((project) => project.featured).slice(0, 4);
   const moreProjects = projects.filter((project) => !project.featured);
   const pinnedPost = posts.find((post) => post.pinned) || posts[0];
   const otherPosts = posts.filter((post) => post !== pinnedPost);
 
-  useEffect(() => {
-    const stored = window.localStorage.getItem("duncan-theme");
-    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    const shouldUseDark = stored ? stored === "dark" : prefersDark;
-    setIsDark(shouldUseDark);
-  }, []);
 
   useEffect(() => {
-    document.body.classList.toggle("dark", isDark);
-    window.localStorage.setItem("duncan-theme", isDark ? "dark" : "light");
-  }, [isDark]);
+    document.body.classList.toggle("dark", true);
+  }, []);
 
   useEffect(() => {
     const scene = heroSceneRef.current;
@@ -285,17 +345,17 @@ export default function Home() {
 
     const updateHeroMotion = (scroll) => {
       const sceneTop = scene.offsetTop;
-      const totalDistance = Math.max(scene.offsetHeight - window.innerHeight, 1);
+      const totalDistance = window.innerHeight * 1.2;
       const rawProgress = (scroll - sceneTop) / totalDistance;
       const progress = Math.min(Math.max(rawProgress, 0), 1);
-      const flipProgress = Math.min(Math.max((progress - 0.1) / 0.6, 0), 1); // Flip over 10%-70% of scroll
-      const exitProgress = Math.min(Math.max((progress - 0.1) / 0.9, 0), 1); // Exit starts at 10%
+      const flipProgress = Math.min(Math.max((progress - 0.05) / 0.75, 0), 1); // Flip smoothly over scroll
+      const exitProgress = Math.min(Math.max((progress - 0.05) / 0.85, 0), 1); // Move down over scroll
       const flipEase = flipProgress * flipProgress * (3 - 2 * flipProgress);
       const exitEase = exitProgress * exitProgress * (3 - 2 * exitProgress);
       const exitX = window.innerWidth >= 1200
         ? Math.max(280, window.innerWidth * 0.22)
         : Math.max(180, window.innerWidth * 0.15);
-      const exitY = window.innerWidth >= 810 ? 580 : 420; 
+      const exitY = (window.innerHeight / 2) + 480;
       const exitScale = window.innerWidth >= 1200 ? 0.85 : 0.75;
 
       // Card Animation - Full 180deg flip to show the back side
@@ -366,6 +426,7 @@ export default function Home() {
 
       <main>
         <div className="hero-scene" id="home" aria-labelledby="hero-title" ref={heroSceneRef}>
+          <ShaderBackground className="hero-bg" />
           <section className="hero">
             <div className="hero-copy hero-copy-left">
               <p className="eyebrow">Duncan Robert</p>
@@ -464,18 +525,15 @@ export default function Home() {
               design and impactful storytelling.
             </p>
           </div>
-          <div className="featured-projects">
-            {featuredProjects.map((project) => (
-              <article className="featured-card" key={project.title}>
-                <a className="featured-media" href="#contact" aria-label={`Discuss ${project.title}`}>
-                  <img src={project.image} alt={project.title} loading="lazy" />
-                </a>
-                <div className="featured-copy">
-                  <MetaRow items={[project.category, project.year, project.client]} />
-                  <h3>{project.title}</h3>
-                  <p>{project.description}</p>
-                </div>
-              </article>
+          <div className="featured-projects" ref={projectsContainerRef}>
+            {featuredProjects.map((project, index) => (
+              <FeaturedProjectCard
+                key={project.title}
+                project={project}
+                index={index}
+                total={featuredProjects.length}
+                scrollYProgress={scrollYProgress}
+              />
             ))}
           </div>
           <div className="more-projects">

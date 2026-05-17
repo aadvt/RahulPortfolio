@@ -17,3 +17,5 @@ Thumbs.db
 .agents/
 plugins/
 skills-lock.json
+
+background/
