@@ -366,10 +366,9 @@ export default function Home() {
       stage.style.setProperty("--stage-scale", `${1 - exitEase * (1 - exitScale)}`);
       stage.style.setProperty("--stage-opacity", "1"); // Keep it visible in the next section
 
-      // Text Splitting Parallax - Matching Portavia splitting effect
-      const textParallax = progress * 150; // 150px movement
-      scene.style.setProperty("--text-parallax-left", `-${textParallax}px`);
-      scene.style.setProperty("--text-parallax-right", `${textParallax}px`);
+      // Text Splitting Parallax - Float letters apart!
+      const textParallax = progress * 180; // 180px expansion
+      scene.style.setProperty("--text-parallax", `${textParallax}px`);
     };
 
     let rafId = 0;
@@ -426,12 +425,13 @@ export default function Home() {
 
       <main>
         <div className="hero-scene" id="home" aria-labelledby="hero-title" ref={heroSceneRef}>
-          <ShaderBackground className="hero-bg" smokeColor="#C74A57" />
-          <section className="hero">
-            <div className="hero-copy hero-copy-left">
-              <p className="eyebrow">Duncan Robert</p>
-              <h1 id="hero-title"><span>digital</span></h1>
+          <ShaderBackground className="hero-bg" smokeColor="#E3142A" />
+          <div className="hero-brand-block" id="hero-title">
+            <div className="hero-brand-main">
+              RAHUL<span className="brand-reg">®</span>
             </div>
+          </div>
+          <section className="hero">
             <div className="portrait-stage" aria-label="Portrait card" ref={portraitStageRef}>
               <div className="portrait-card portrait-card-back">
                 <img src="/images/IMG_6471.jpg" alt="Back portrait" />
@@ -446,10 +446,6 @@ export default function Home() {
                 <span>100%</span>
                 <span>raw</span>
               </div>
-            </div>
-            <div className="hero-copy hero-copy-right">
-              <h1><span>designer</span></h1>
-              <p>I am a US-based <span className="hand-text">creative</span> and Framer developer.</p>
             </div>
           </section>
         </div>

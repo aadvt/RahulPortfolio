@@ -1,3 +1,30 @@
+@font-face {
+  font-family: 'Laybar';
+  src: url('/fonts/LAYBAR.ttf') format('truetype'),
+       url('/fonts/LAYBAR.otf') format('opentype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Moga Condensed';
+  src: local('Moga Condensed'), local('Moga-Condensed'), local('Moga'), local('MogaCondensed'),
+       url('/fonts/moga.otf') format('opentype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Albercio Condensed Sans';
+  src: local('Albercio Condensed Sans'), local('Albercio-Condensed-Sans'), local('Albercio'),
+       url('/fonts/Albercio-Regular.otf') format('opentype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   color-scheme: light dark;
   --bg: #ffffff;
@@ -269,55 +296,56 @@ section {
 }
 
 .hero h1 {
-  font-size: clamp(6rem, 14vw, 12rem);
+  font-family: 'Moga Condensed', 'Laybar', sans-serif;
+  font-size: clamp(5.2rem, 11vw, 10rem);
+  font-weight: 800;
+  font-style: normal;
   z-index: 105;
   position: relative;
   color: #fff;
+  letter-spacing: 0.02em;
 }
 
-.hero-copy-left {
-  display: flex;
-  flex: 1 0 0;
-  flex-direction: column;
-  justify-content: center;
-  align-items: flex-end;
-  max-width: 50%;
-  min-width: 0;
-  height: 100vh;
-  text-align: right;
-  overflow: hidden;
-  transform: translateX(var(--text-parallax-left, 0));
-  color: #fff;
-}
-
-.hero-copy-right {
-  display: flex;
-  flex: 1 0 0;
-  flex-direction: column;
-  justify-content: center;
-  align-items: flex-start;
-  max-width: 50%;
-  min-width: 0;
-  height: 100vh;
-  overflow: hidden;
-  transform: translateX(var(--text-parallax-right, 0));
-  color: #fff;
-}
-
-.hero-copy-right p {
-  max-width: 90%;
-  color: #ccc;
-  font-size: 18px;
-  margin-bottom: 0;
-  margin-left: auto;
-}
-
-.eyebrow {
-  margin: 0 0 6px;
-  font-family: var(--display);
-  font-size: clamp(1.5rem, 4vw, 2.2rem);
-  line-height: 1.1;
+.hero-brand-block {
+  position: absolute;
+  top: clamp(90px, 12vh, 130px);
+  left: 24px;
+  pointer-events: none;
+  user-select: none;
+  font-family: 'Archivo Black', 'Montserrat', sans-serif;
   text-transform: uppercase;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  transform: translateY(calc(-0.15 * var(--text-parallax, 0px)));
+  will-change: transform;
+}
+
+.hero-brand-main {
+  font-size: clamp(4.5rem, 11vw, 9.5rem);
+  font-weight: 900;
+  line-height: 0.8;
+  color: rgba(255, 255, 255, 0.95);
+  letter-spacing: -0.06em;
+  display: flex;
+  align-items: flex-start;
+}
+
+.brand-reg {
+  font-size: 0.15em;
+  margin-top: 0.1em;
+  margin-left: 0.05em;
+  font-weight: normal;
+}
+
+.hero-brand-sub {
+  font-size: clamp(0.75rem, 1.2vw, 1.1rem);
+  font-weight: 900;
+  letter-spacing: 0.25em;
+  color: rgba(255, 255, 255, 0.6);
+  margin-top: 0.4rem;
+  padding-left: 0.1em;
 }
 
 .portrait-stage {
@@ -1039,12 +1067,20 @@ section {
     padding-top: 110px;
   }
 
-  .hero-copy-left,
-  .hero-copy-right {
-    display: block;
-    max-width: none;
-    height: auto;
-    text-align: left;
+  .hero-brand-block {
+    top: 95px;
+    left: 12px;
+  }
+
+  .hero-brand-main {
+    font-size: clamp(3.2rem, 9.5vw, 4.8rem);
+    letter-spacing: -0.05em;
+  }
+
+  .hero-brand-sub {
+    font-size: 0.7rem;
+    letter-spacing: 0.2em;
+    margin-top: 0.2rem;
   }
 
   .portrait-stage {
@@ -1098,7 +1134,7 @@ section {
   }
 
   .hero h1 {
-    font-size: clamp(4.4rem, 22vw, 6.2rem);
+    font-size: clamp(3.2rem, 16vw, 4.8rem);
   }
 
   .section-intro h2,
