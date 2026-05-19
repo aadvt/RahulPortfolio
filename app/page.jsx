@@ -343,31 +343,104 @@ export default function Home() {
       infinite: false,
     });
 
+    let coords = null;
+    const updateCoords = () => {
+      const hero = scene;
+      const servicesLanding = document.querySelector(".services-card-landing");
+      const aboutLanding = document.querySelector(".about-card-landing");
+
+      if (!hero) return;
+
+      const heroRect = hero.getBoundingClientRect();
+      const basePageX = heroRect.left + window.scrollX + heroRect.width / 2;
+      const basePageY = heroRect.top + window.scrollY + heroRect.height / 2;
+
+      let servicesShiftX = 0;
+      let servicesShiftY = 0;
+      if (servicesLanding) {
+        const rect = servicesLanding.getBoundingClientRect();
+        const landingPageX = rect.left + window.scrollX + rect.width / 2;
+        const landingPageY = rect.top + window.scrollY + rect.height / 2;
+        servicesShiftX = landingPageX - basePageX;
+        servicesShiftY = landingPageY - basePageY;
+      }
+
+      let aboutShiftX = 0;
+      let aboutShiftY = 0;
+      if (aboutLanding) {
+        const rect = aboutLanding.getBoundingClientRect();
+        const landingPageX = rect.left + window.scrollX + rect.width / 2;
+        const landingPageY = rect.top + window.scrollY + rect.height / 2;
+        aboutShiftX = landingPageX - basePageX;
+        aboutShiftY = landingPageY - basePageY;
+      }
+
+      coords = {
+        services: { x: servicesShiftX, y: servicesShiftY },
+        about: { x: aboutShiftX, y: aboutShiftY },
+      };
+    };
+
+    updateCoords();
+    // Re-run after a small delay to ensure loading heights are settled
+    const timer = setTimeout(updateCoords, 600);
+
+    const handleResize = () => {
+      updateCoords();
+    };
+    window.addEventListener("resize", handleResize);
+
     const updateHeroMotion = (scroll) => {
-      const sceneTop = scene.offsetTop;
-      const totalDistance = window.innerHeight * 1.2;
-      const rawProgress = (scroll - sceneTop) / totalDistance;
-      const progress = Math.min(Math.max(rawProgress, 0), 1);
-      const flipProgress = Math.min(Math.max((progress - 0.05) / 0.75, 0), 1); // Flip smoothly over scroll
-      const exitProgress = Math.min(Math.max((progress - 0.05) / 0.85, 0), 1); // Move down over scroll
-      const flipEase = flipProgress * flipProgress * (3 - 2 * flipProgress);
-      const exitEase = exitProgress * exitProgress * (3 - 2 * exitProgress);
-      const exitX = window.innerWidth >= 1200
-        ? Math.max(280, window.innerWidth * 0.22)
-        : Math.max(180, window.innerWidth * 0.15);
-      const exitY = (window.innerHeight / 2) + 480;
-      const exitScale = window.innerWidth >= 1200 ? 0.85 : 0.75;
+      if (window.innerWidth <= 768) {
+        stage.style.setProperty("--flip-rotation", "0deg");
+        stage.style.setProperty("--flip-shift", "0px");
+        stage.style.setProperty("--stage-shift", "0px");
+        stage.style.setProperty("--stage-shift-x", "0px");
+        stage.style.setProperty("--stage-scale", "1");
+        stage.style.setProperty("--stage-opacity", "1");
+        scene.style.setProperty("--text-parallax", "0px");
+        return;
+      }
 
-      // Card Animation - Full 180deg flip to show the back side
-      stage.style.setProperty("--flip-rotation", `${flipEase * 180}deg`);
-      stage.style.setProperty("--flip-shift", `${flipEase * 18}px`);
-      stage.style.setProperty("--stage-shift", `${exitEase * exitY}px`);
-      stage.style.setProperty("--stage-shift-x", `${exitEase * exitX}px`);
-      stage.style.setProperty("--stage-scale", `${1 - exitEase * (1 - exitScale)}`);
-      stage.style.setProperty("--stage-opacity", "1"); // Keep it visible in the next section
+      if (!coords) return;
 
-      // Text Splitting Parallax - Float letters apart!
-      const textParallax = progress * 180; // 180px expansion
+      const servicesSection = document.getElementById("services");
+      const aboutSection = document.getElementById("about");
+      const servicesTop = servicesSection ? (servicesSection.getBoundingClientRect().top + scroll) : window.innerHeight;
+      const aboutTop = aboutSection ? (aboutSection.getBoundingClientRect().top + scroll) : window.innerHeight * 2;
+
+      let x = 0;
+      let y = 0;
+      let rotation = 0;
+      let scale = 1;
+
+      const servicesScale = 0.8;
+      const aboutScale = 0.8;
+
+      if (scroll <= servicesTop) {
+        const p1 = Math.min(Math.max(scroll / servicesTop, 0), 1);
+        const ease1 = p1 * p1 * (3 - 2 * p1);
+        x = ease1 * coords.services.x;
+        y = ease1 * coords.services.y;
+        rotation = ease1 * 180;
+        scale = 1 - ease1 * (1 - servicesScale);
+      } else {
+        const p2 = Math.min(Math.max((scroll - servicesTop) / (aboutTop - servicesTop), 0), 1);
+        const ease2 = p2 * p2 * (3 - 2 * p2);
+        x = coords.services.x + ease2 * (coords.about.x - coords.services.x);
+        y = coords.services.y + ease2 * (coords.about.y - coords.services.y);
+        rotation = 180 + ease2 * 180;
+        scale = servicesScale - ease2 * (servicesScale - aboutScale);
+      }
+
+      stage.style.setProperty("--flip-rotation", `${rotation}deg`);
+      stage.style.setProperty("--flip-shift", `${rotation > 0 ? (rotation / 180) * 18 : 0}px`);
+      stage.style.setProperty("--stage-shift", `${y}px`);
+      stage.style.setProperty("--stage-shift-x", `${x}px`);
+      stage.style.setProperty("--stage-scale", `${scale}`);
+      stage.style.setProperty("--stage-opacity", "1");
+
+      const textParallax = Math.min(Math.max(scroll / servicesTop, 0), 1) * 180;
       scene.style.setProperty("--text-parallax", `${textParallax}px`);
     };
 
@@ -383,6 +456,8 @@ export default function Home() {
 
     return () => {
       lenis.destroy();
+      clearTimeout(timer);
+      window.removeEventListener("resize", handleResize);
       if (rafId) window.cancelAnimationFrame(rafId);
     };
   }, []);
@@ -496,53 +571,56 @@ export default function Home() {
           <div className="services-card-landing"></div>
         </section>
 
-        <section className="about section-grid" id="about" aria-labelledby="about-title">
-          <div className="section-intro">
-            <p className="eyebrow">Who am I?</p>
-            <h2 id="about-title">About me</h2>
-            <p>
-              I am a digital designer and Framer developer passionate about crafting <span className="hand-text">unforgettable</span>,
-              user-centered experiences.
-            </p>
-            <p>
-              With a strong foundation in visual design and a deep understanding of interactive systems,
-              I bring ideas to life through thoughtful design, chaotic-yet-organized layouts, and expressive typography.
-            </p>
-          </div>
-          <div className="about-panel">
-            <div className="stats-grid">
-              <article>
-                <strong>12</strong>
-                <span>Years of experience</span>
-              </article>
-              <article>
-                <strong>270</strong>
-                <span>Completed projects</span>
-              </article>
-              <article>
-                <strong>50+</strong>
-                <span>Clients worldwide</span>
-              </article>
+        <section className="about" id="about" aria-labelledby="about-title">
+          <div className="about-content-wrapper">
+            <div className="section-intro">
+              <p className="eyebrow">Who am I?</p>
+              <h2 id="about-title">About me</h2>
+              <p>
+                I am a digital designer and Framer developer passionate about crafting <span className="hand-text">unforgettable</span>,
+                user-centered experiences.
+              </p>
+              <p>
+                With a strong foundation in visual design and a deep understanding of interactive systems,
+                I bring ideas to life through thoughtful design, chaotic-yet-organized layouts, and expressive typography.
+              </p>
             </div>
-            <div className="experience-list">
-              <h3>Discover my journey in design</h3>
-              <div className="timeline-row">
-                <span>2023 - Present</span>
-                <strong>Creative Art Director</strong>
-                <small>NovaWorks Agency</small>
+            <div className="about-panel">
+              <div className="stats-grid">
+                <article>
+                  <strong>12</strong>
+                  <span>Years of experience</span>
+                </article>
+                <article>
+                  <strong>270</strong>
+                  <span>Completed projects</span>
+                </article>
+                <article>
+                  <strong>50+</strong>
+                  <span>Clients worldwide</span>
+                </article>
               </div>
-              <div className="timeline-row">
-                <span>2020 - 2023</span>
-                <strong>Senior UI/UX Designer</strong>
-                <small>BrightLabs Digital</small>
-              </div>
-              <div className="timeline-row">
-                <span>2017 - 2020</span>
-                <strong>Digital Designer</strong>
-                <small>Independent Studio</small>
+              <div className="experience-list">
+                <h3>Discover my journey in design</h3>
+                <div className="timeline-row">
+                  <span>2023 - Present</span>
+                  <strong>Creative Art Director</strong>
+                  <small>NovaWorks Agency</small>
+                </div>
+                <div className="timeline-row">
+                  <span>2020 - 2023</span>
+                  <strong>Senior UI/UX Designer</strong>
+                  <small>BrightLabs Digital</small>
+                </div>
+                <div className="timeline-row">
+                  <span>2017 - 2020</span>
+                  <strong>Digital Designer</strong>
+                  <small>Independent Studio</small>
+                </div>
               </div>
             </div>
           </div>
+          <div className="about-card-landing"></div>
         </section>
 
         <section className="projects" id="projects" aria-labelledby="projects-title">
