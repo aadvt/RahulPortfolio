@@ -563,6 +563,10 @@ section {
   z-index: 110;
 }
 
+.mobile-hero-quote {
+  display: none;
+}
+
 .section-grid {
   display: grid;
   grid-template-columns: minmax(250px, 0.9fr) minmax(0, 1.1fr);
@@ -1208,6 +1212,12 @@ section {
 }
 
 @media (max-width: 768px) {
+  .hero-scene {
+    height: 100svh;
+    min-height: 680px;
+    overflow: visible;
+  }
+
   .nav-shell {
     width: min(calc(100% - 20px), 620px);
   }
@@ -1223,36 +1233,163 @@ section {
   .hero {
     display: grid;
     grid-template-columns: 1fr;
-    min-height: auto;
-    width: min(100% - 24px, var(--max));
-    gap: 26px;
-    padding-top: 110px;
+    align-items: center;
+    min-height: 100svh;
+    width: min(100% - 18px, var(--max));
+    gap: 0;
+    padding: 96px 0 52px;
+    overflow: visible;
+  }
+
+  .hero::after {
+    content: "";
+    position: absolute;
+    right: 24px;
+    bottom: 86px;
+    z-index: 86;
+    width: 58px;
+    height: 24px;
+    border-radius: 50%;
+    border-top: 2px solid rgba(235, 231, 216, 0.82);
+    border-left: 1px solid rgba(235, 231, 216, 0.42);
+    filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.72)) drop-shadow(0 0 10px rgba(235, 231, 216, 0.18));
+    transform: rotate(-17deg);
+    pointer-events: none;
   }
 
   .hero-brand-block {
-    top: 95px;
-    left: 12px;
+    top: 104px;
+    left: 50%;
+    right: auto;
+    z-index: 70;
+    width: 100vw;
+    align-items: center;
+    transform: translateX(-50%);
+    text-align: center;
   }
 
   .hero-brand-main {
-    font-size: clamp(3.2rem, 9.5vw, 4.8rem);
-    letter-spacing: -0.05em;
+    display: block;
+    width: min(100vw - 34px, 390px);
+    overflow: hidden;
+    color: rgba(7, 6, 7, 0.92);
+    font-size: clamp(4.9rem, 25.5vw, 6.85rem);
+    letter-spacing: -0.065em;
+    line-height: 0.74;
   }
 
-  .hero-brand-sub {
-    font-size: 0.7rem;
-    letter-spacing: 0.2em;
-    margin-top: 0.2rem;
+  .hero-brand-main::after {
+    content: "RAHUL";
+    position: absolute;
+    left: 50%;
+    top: calc(100svh - 482px);
+    display: block;
+    width: min(100vw - 34px, 390px);
+    overflow: hidden;
+    color: rgba(7, 6, 7, 0.92);
+    font: inherit;
+    line-height: 0.74;
+    transform: translateX(-50%);
+  }
+
+  .brand-reg,
+  .hero-brand-sub,
+  .hero-abstract,
+  .portrait-stage .circle-badge {
+    display: none;
   }
 
   .portrait-stage {
     position: relative;
     top: auto;
     left: auto;
-    width: min(72vw, 260px);
-    height: min(100.8vw, 364px);
+    z-index: 110;
+    width: min(67vw, 285px);
+    height: min(94vw, 399px);
+    align-self: start;
     justify-self: center;
+    margin-top: 56px;
     transform: translate3d(var(--stage-shift-x), var(--stage-shift), 0) scale(var(--stage-scale));
+    transition: transform 80ms linear;
+  }
+
+  .portrait-card {
+    box-shadow: 0 22px 70px rgba(0, 0, 0, 0.48);
+  }
+
+  .mobile-hero-quote {
+    position: absolute;
+    left: 50%;
+    bottom: 94px;
+    z-index: 85;
+    display: grid;
+    justify-items: center;
+    width: min(90vw, 356px);
+    margin: 0;
+    color: rgb(226, 221, 205);
+    text-align: center;
+    text-shadow:
+      0 1px 0 rgb(255, 252, 235),
+      0 2px 0 rgba(92, 88, 76, 0.95),
+      0 9px 18px rgba(0, 0, 0, 0.48),
+      0 0 18px rgba(241, 238, 219, 0.24);
+    transform: translateX(-50%);
+    transform-style: preserve-3d;
+  }
+
+  .quote-arc {
+    display: block;
+    width: 100%;
+    font-family: "Bodoni Moda", "Times New Roman", serif;
+    font-size: clamp(1.42rem, 6.8vw, 2.12rem);
+    font-style: italic;
+    font-weight: 900;
+    line-height: 0.9;
+    letter-spacing: -0.075em;
+    white-space: nowrap;
+    text-transform: uppercase;
+    transform: perspective(260px) rotateX(32deg) scaleX(1.08);
+    transform-origin: center bottom;
+  }
+
+  .quote-script {
+    display: block;
+    margin-top: -3px;
+    font-family: "Permanent Marker", cursive;
+    font-size: clamp(0.98rem, 4.6vw, 1.5rem);
+    font-weight: 400;
+    line-height: 0.8;
+    letter-spacing: 0.02em;
+    text-transform: lowercase;
+    transform: rotate(-7deg) scaleX(1.25);
+    opacity: 0.92;
+  }
+
+  .mobile-hero-quote::before,
+  .mobile-hero-quote::after {
+    content: "";
+    position: absolute;
+    top: -4px;
+    z-index: -1;
+    width: 28px;
+    height: 82px;
+    border-color: rgb(232, 228, 212);
+    filter: drop-shadow(0 2px 0 rgba(65, 61, 54, 0.78)) drop-shadow(0 0 12px rgba(232, 228, 212, 0.22));
+    opacity: 0.9;
+  }
+
+  .mobile-hero-quote::before {
+    left: -4px;
+    border-left: 4px solid;
+    border-top: 2px solid;
+    transform: skewX(-16deg) rotate(7deg);
+  }
+
+  .mobile-hero-quote::after {
+    right: -4px;
+    border-right: 4px solid;
+    border-top: 2px solid;
+    transform: skewX(16deg) rotate(-7deg);
   }
 
   .section-grid,
