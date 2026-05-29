@@ -5,6 +5,7 @@ import Lenis from "lenis";
 import { motion, useScroll, useTransform } from "framer-motion";
 import anime from "animejs";
 import ShaderBackground from "../components/ShaderBackground";
+import GradientBackground from "../components/GradientBackground";
 
 const services = [
   {
@@ -464,9 +465,7 @@ function ScrollReveal({ children, delay = 0, variant = "wipe" }) {
 }
 
 export default function Home() {
-  const [isDark, setIsDark] = useState(true);
   const [submitText, setSubmitText] = useState("Submit");
-  const [menuOpen, setMenuOpen] = useState(false);
   const heroSceneRef = useRef(null);
   const portraitStageRef = useRef(null);
   const projectsContainerRef = useRef(null);
@@ -539,83 +538,6 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    document.body.classList.toggle("menu-open", menuOpen);
-  }, [menuOpen]);
-
-  // Shape wipe transition refs
-  const wipeOverlayRef = useRef(null);
-  const wipePathRef = useRef(null);
-  const isAnimatingRef = useRef(false);
-
-  function handleNavClick(e, targetId) {
-    if (window.innerWidth > 640) {
-      setMenuOpen(false);
-      return;
-    }
-
-    e.preventDefault();
-
-    if (isAnimatingRef.current) return;
-    isAnimatingRef.current = true;
-
-    if (wipeOverlayRef.current) {
-      wipeOverlayRef.current.style.visibility = "visible";
-      wipeOverlayRef.current.style.pointerEvents = "auto";
-    }
-
-    // Path phases for soft polygon wave animation upwards
-    // initialPath represents bottom flat line
-    const initialPath = "M 0 100 Q 50 100 100 100 L 100 100 Q 50 100 0 100 Z";
-    // midPath1 curves top edge up
-    const midPath1 = "M 0 60 Q 50 20 100 60 L 100 100 Q 50 100 0 100 Z";
-    // midPath2 hits top, fully filling screen
-    const midPath2 = "M 0 0 Q 50 0 100 0 L 100 100 Q 50 100 0 100 Z";
-
-    // midPath3 curves bottom edge up to reveal next section
-    const midPath3 = "M 0 0 Q 50 0 100 0 L 100 40 Q 50 80 0 40 Z";
-    // endPath top line flat, completely empty
-    const endPath = "M 0 0 Q 50 0 100 0 L 100 0 Q 50 0 0 0 Z";
-
-    anime({
-      targets: wipePathRef.current,
-      d: [
-        { value: midPath1, duration: 300, easing: "easeInQuad" },
-        { value: midPath2, duration: 300, easing: "easeOutQuad" },
-      ],
-      complete: () => {
-        setMenuOpen(false);
-
-        const targetElement = document.querySelector(targetId);
-        if (targetElement) {
-          targetElement.scrollIntoView({ behavior: "instant" });
-        }
-
-        anime({
-          targets: wipePathRef.current,
-          d: [
-            { value: midPath3, duration: 300, easing: "easeInQuad" },
-            { value: endPath, duration: 300, easing: "easeOutQuad" },
-          ],
-          complete: () => {
-            isAnimatingRef.current = false;
-            if (wipeOverlayRef.current) {
-              wipeOverlayRef.current.style.visibility = "hidden";
-              wipeOverlayRef.current.style.pointerEvents = "none";
-            }
-            if (wipePathRef.current) {
-              wipePathRef.current.setAttribute("d", initialPath);
-            }
-          },
-        });
-      },
-    });
-  }
-
-  function closeMenu() {
-    setMenuOpen(false);
-  }
-
-  useEffect(() => {
     const scene = heroSceneRef.current;
     const stage = portraitStageRef.current;
     if (!scene || !stage) return;
@@ -634,13 +556,17 @@ export default function Home() {
     });
 
     let coords = null;
+    let servicesTopPage = window.innerHeight;
     const updateCoords = () => {
       const hero = scene;
       const stageEl = stage;
       const servicesLanding = document.querySelector(".services-card-landing");
+      const servicesSection = document.getElementById("services");
       const aboutLanding = document.querySelector(".about-card-landing");
 
       if (!hero || !stageEl) return;
+
+      servicesTopPage = servicesSection ? servicesSection.offsetTop : window.innerHeight;
 
       // Restore original base coordinate calculation logic
       const originalTransform = stageEl.style.transform;
@@ -688,6 +614,9 @@ export default function Home() {
 
     const updateHeroMotion = (scroll) => {
       if (window.innerWidth <= 768) {
+        stage.style.position = "absolute";
+        stage.style.top = "50%";
+        stage.style.left = "50%";
         stage.style.setProperty("--flip-rotation", "0deg");
         stage.style.setProperty("--flip-shift", "0px");
         stage.style.setProperty("--stage-shift", "0px");
@@ -698,42 +627,37 @@ export default function Home() {
         return;
       }
 
-      const servicesSection = document.getElementById("services");
-      const aboutSection = document.getElementById("about");
-      const servicesTop = servicesSection ? (servicesSection.getBoundingClientRect().top + scroll) : window.innerHeight;
-      const aboutTop = aboutSection ? (aboutSection.getBoundingClientRect().top + scroll) : window.innerHeight * 2;
+      const servicesTop = servicesTopPage || window.innerHeight;
 
       let x = 0;
       let y = 0;
       let rotation = 0;
-      let scale = 1;
-
-      // Calculate dynamic scale to match 350px landing zone
-      const cardWidth = 0.147 * window.innerWidth;
-      const servicesScale = 350 / cardWidth; 
-      const aboutScale = 350 / cardWidth;
 
       if (scroll <= servicesTop) {
+        stage.style.position = "absolute";
+        stage.style.top = "50%";
+        stage.style.left = "50%";
+        stage.style.zIndex = "100";
         const p1 = Math.min(Math.max(scroll / servicesTop, 0), 1);
         const ease1 = p1 * p1 * (3 - 2 * p1);
         x = ease1 * (coords?.services?.x || 0);
         y = ease1 * (coords?.services?.y || 0);
         rotation = ease1 * 180;
-        scale = 1 - ease1 * (1 - servicesScale);
       } else {
-        const p2 = Math.min(Math.max((scroll - servicesTop) / (aboutTop - servicesTop), 0), 1);
-        const ease2 = p2 * p2 * (3 - 2 * p2);
-        x = (coords?.services?.x || 0) + ease2 * ((coords?.about?.x || 0) - (coords?.services?.x || 0));
-        y = (coords?.services?.y || 0) + ease2 * ((coords?.about?.y || 0) - (coords?.services?.y || 0));
-        rotation = 180 + ease2 * 180;
-        scale = servicesScale - ease2 * (servicesScale - aboutScale);
+        stage.style.position = "absolute";
+        stage.style.top = "50%";
+        stage.style.left = "50%";
+        stage.style.zIndex = "100";
+        x = coords?.services?.x || 0;
+        y = coords?.services?.y || 0;
+        rotation = 180;
       }
 
       stage.style.setProperty("--flip-rotation", `${rotation}deg`);
       stage.style.setProperty("--flip-shift", `${rotation > 0 ? (rotation / 180) * 18 : 0}px`);
       stage.style.setProperty("--stage-shift", `${y}px`);
       stage.style.setProperty("--stage-shift-x", `${x}px`);
-      stage.style.setProperty("--stage-scale", `${scale}`);
+      stage.style.setProperty("--stage-scale", "1");
       stage.style.setProperty("--stage-opacity", "1");
 
       const textParallax = Math.min(Math.max(scroll / servicesTop, 0), 1) * 180;
@@ -743,7 +667,7 @@ export default function Home() {
     let rafId = 0;
     const raf = (time) => {
       lenis.raf(time);
-      updateHeroMotion(lenis.scroll);
+      updateHeroMotion(Math.max(lenis.scroll || 0, window.scrollY || 0));
       rafId = window.requestAnimationFrame(raf);
     };
 
@@ -769,74 +693,6 @@ export default function Home() {
 
   return (
     <div className="site-shell">
-      <header className="nav-shell" aria-label="Primary navigation">
-        <a className="avatar-chip" href="#home" aria-label="Duncan Robert home">
-          <span className="avatar-dot"></span>
-          <span>DR</span>
-        </a>
-        <nav className="nav-links" aria-label="Sections">
-          <a href="#home">Home</a>
-          <a href="#about">About</a>
-          <a href="#projects">Projects</a>
-          <a href="#journal">Blogs</a>
-        </nav>
-        <button
-          className="theme-toggle"
-          type="button"
-          aria-label="Toggle theme"
-          aria-pressed={isDark}
-          onClick={() => setIsDark((current) => !current)}
-        >
-          <span className="toggle-track">
-            <span className="toggle-thumb"></span>
-          </span>
-        </button>
-        <button
-          className="hamburger-btn"
-          type="button"
-          aria-label="Toggle menu"
-          aria-expanded={menuOpen}
-          onClick={() => setMenuOpen((v) => !v)}
-        >
-          <span className="hamburger-line"></span>
-        </button>
-      </header>
-
-      <div className="mobile-nav-drawer" aria-hidden={!menuOpen}>
-        <a href="#home" onClick={(e) => handleNavClick(e, '#home')}>Home</a>
-        <a href="#about" onClick={(e) => handleNavClick(e, '#about')}>About</a>
-        <a href="#projects" onClick={(e) => handleNavClick(e, '#projects')}>Projects</a>
-        <a href="#journal" onClick={(e) => handleNavClick(e, '#journal')}>Blogs</a>
-        <a href="#contact" onClick={(e) => handleNavClick(e, '#contact')}>Contact</a>
-      </div>
-
-      <div
-        className="shape-wipe-overlay"
-        ref={wipeOverlayRef}
-        style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          width: "100%",
-          height: "100%",
-          zIndex: 9999, // ensures it covers the nav drawer and everything
-          pointerEvents: "none",
-          visibility: "hidden",
-        }}
-      >
-        <svg
-          viewBox="0 0 100 100"
-          preserveAspectRatio="none"
-          style={{ width: "100%", height: "100%" }}
-        >
-          <path
-            ref={wipePathRef}
-            d="M 0 100 Q 50 100 100 100 L 100 100 Q 50 100 0 100 Z"
-            fill="var(--surface)"
-          />
-        </svg>
-      </div>
-
       <main>
         <div className="hero-scene" id="home" aria-labelledby="hero-title" ref={heroSceneRef}>
           <ShaderBackground className="hero-bg" smokeColor="#E3142A" />
@@ -875,10 +731,18 @@ export default function Home() {
                 <span className="hero-letter">L</span>
               </div>
             </div>
+            <div className="hero-filler-layer" aria-hidden="true">
+              <p className="hero-filler-title">PROJECT BECOMING</p>
+              <p className="hero-note hero-note-left">Selected identity fragments, motion tests, and visual systems.</p>
+              <p className="hero-note hero-note-center">Digital designer building image-led product stories.</p>
+              <p className="hero-note hero-note-right">Portfolio edition: Rahul / experimental web direction.</p>
+              <p className="hero-note hero-note-bottom">Scroll for the next frame.</p>
+            </div>
           </section>
         </div>
 
         <section className="services" id="services" aria-labelledby="services-title">
+          <GradientBackground />
           <div className="services-content-wrapper">
             <ScrollReveal variant="wipe">
               <div className="section-intro">
@@ -893,7 +757,7 @@ export default function Home() {
               <Accordion items={services} />
             </ScrollReveal>
           </div>
-          <div className="services-card-landing"></div>
+          <div className="services-card-landing" aria-hidden="true"></div>
         </section>
 
         <section className="about" id="about" aria-labelledby="about-title">

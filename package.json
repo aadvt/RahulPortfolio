@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@paper-design/shaders-react": "^0.0.76",
     "@react-three/fiber": "^9.6.1",
     "animejs": "^3.2.2",
     "framer-motion": "^12.38.0",
