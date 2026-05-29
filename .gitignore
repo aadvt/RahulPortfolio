@@ -18,4 +18,6 @@ Thumbs.db
 plugins/
 skills-lock.json
 
-background/
+background/# Ignore large media
+images/*.mp4
+public/images/*.mp4

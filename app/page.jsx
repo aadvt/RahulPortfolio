@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Lenis from "lenis";
 import { motion, useScroll, useTransform } from "framer-motion";
+import anime from "animejs";
 import ShaderBackground from "../components/ShaderBackground";
 
 const services = [
@@ -305,9 +306,167 @@ function FeaturedProjectCard({ project, index, total, scrollYProgress }) {
   );
 }
 
+const fadeUpProps = {
+  initial: { opacity: 0, y: 40 },
+  whileInView: { opacity: 1, y: 0 },
+  viewport: { once: true, margin: "-50px" },
+  transition: { duration: 0.7, ease: [0.22, 1, 0.36, 1] }
+};
+
+const fadeUpPropsDelay = {
+  initial: { opacity: 0, y: 40 },
+  whileInView: { opacity: 1, y: 0 },
+  viewport: { once: true, margin: "-50px" },
+  transition: { duration: 0.7, delay: 0.15, ease: [0.22, 1, 0.36, 1] }
+};
+
+/**
+ * Universal Reveal Component with dynamic transition types
+ */
+function ScrollReveal({ children, delay = 0, variant = "wipe" }) {
+  const containerRef = useRef(null);
+  const elementRef = useRef(null);
+  const maskRef = useRef(null);
+  const svgRef = useRef(null);
+  const animationRef = useRef(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        const activeVariant = variant;
+
+        if (entry.isIntersecting) {
+          if (animationRef.current) animationRef.current.pause();
+
+          if (activeVariant === "wipe") {
+            animationRef.current = anime.timeline({ delay: delay })
+            .add({
+              targets: maskRef.current,
+              d: [
+                { value: "M 0 100 Q 50 100 100 100 L 100 100 Q 50 100 0 100 Z", duration: 0 },
+                { value: "M 0 50 Q 50 0 100 50 L 100 100 Q 50 100 0 100 Z", duration: 400, easing: "easeOutQuad" },
+                { value: "M 0 0 Q 50 0 100 0 L 100 100 Q 50 100 0 100 Z", duration: 300, easing: "linear" }
+              ]
+            })
+            .add({
+              targets: maskRef.current,
+              d: "M 0 0 Q 50 0 100 0 L 100 0 Q 50 0 0 0 Z",
+              duration: 300,
+              easing: "easeInOutCubic"
+            })
+            .add({
+              targets: svgRef.current,
+              opacity: 0,
+              duration: 100,
+              easing: "linear"
+            });
+
+            anime({
+              targets: containerRef.current,
+              opacity: [0, 1],
+              translateY: [20, 0],
+              duration: 600,
+              delay: delay + 400,
+              easing: "easeOutSine"
+            });
+          } else if (activeVariant === "fluid-flow") {
+            animationRef.current = anime({
+              targets: containerRef.current,
+              opacity: [0, 1],
+              translateY: [60, 0],
+              scale: [0.98, 1],
+              duration: 1000,
+              delay: delay,
+              easing: "easeOutCubic"
+            });
+          } else if (activeVariant === "glitch") {
+            animationRef.current = anime({
+              targets: containerRef.current,
+              opacity: [0, 1],
+              translateX: [15, 0],
+              duration: 500,
+              delay: delay,
+              easing: "steps(4)"
+            });
+          } else if (activeVariant === "reveal-box") {
+            // Guarantee parent visibility
+            anime.set(containerRef.current, { opacity: 1, translateY: 0 });
+            
+            animationRef.current = anime.timeline({ delay: delay });
+            
+            animationRef.current
+            .add({
+              targets: maskRef.current,
+              width: ["100%", "0%"],
+              left: ["0%", "100%"],
+              duration: 800,
+              easing: "easeInOutExpo"
+            })
+            .add({
+              targets: elementRef.current,
+              opacity: [0, 1],
+              duration: 600,
+              easing: "easeOutSine"
+            }, "-=600");
+          }
+        } else {
+          if (animationRef.current) animationRef.current.pause();
+          
+          if (activeVariant === "wipe") {
+            if (maskRef.current) maskRef.current.setAttribute("d", "M 0 100 Q 25 100 50 100 Q 75 100 100 100 L 100 100 Q 50 100 0 100 Z");
+            if (svgRef.current) svgRef.current.style.opacity = "1";
+          } else if (activeVariant === "reveal-box") {
+            if (maskRef.current) {
+              maskRef.current.style.width = "100%";
+              maskRef.current.style.left = "0%";
+            }
+            if (elementRef.current) elementRef.current.style.opacity = "0";
+          }
+          anime.set(containerRef.current, { opacity: 0, translateY: 30 });
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (containerRef.current) observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, [delay, variant]);
+
+  const activeVariant = variant;
+
+  return (
+    <div ref={containerRef} style={{ position: "relative", opacity: 0, willChange: "transform, opacity" }}>
+      {activeVariant === "wipe" && (
+        <div ref={svgRef} style={{ position: "absolute", inset: 0, zIndex: 10, pointerEvents: "none", overflow: "hidden", willChange: "transform" }}>
+          <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{ width: "100%", height: "100%", display: "block" }}>
+            <path ref={maskRef} d="M 0 100 Q 25 100 50 100 Q 75 100 100 100 L 100 100 Q 50 100 0 100 Z" fill="var(--accent)" />
+          </svg>
+        </div>
+      )}
+      {activeVariant === "reveal-box" && (
+        <div ref={maskRef} style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          height: "100%",
+          width: "100%",
+          backgroundColor: "var(--accent)",
+          zIndex: 2,
+          pointerEvents: "none",
+          willChange: "transform, width"
+        }} />
+      )}
+      <div ref={elementRef} style={{ opacity: activeVariant === "reveal-box" ? 0 : 1, willChange: "opacity" }}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
 export default function Home() {
   const [isDark, setIsDark] = useState(true);
   const [submitText, setSubmitText] = useState("Submit");
+  const [menuOpen, setMenuOpen] = useState(false);
   const heroSceneRef = useRef(null);
   const portraitStageRef = useRef(null);
   const projectsContainerRef = useRef(null);
@@ -320,10 +479,141 @@ export default function Home() {
   const pinnedPost = posts.find((post) => post.pinned) || posts[0];
   const otherPosts = posts.filter((post) => post !== pinnedPost);
 
+  // Theater section references and scroll transforms
+  const theaterRef = useRef(null);
+  const videoRef = useRef(null);
+  const [isMuted, setIsMuted] = useState(true);
+  const [timecode, setTimecode] = useState("00:14:23:18");
+
+  const { scrollYProgress: theaterProgress } = useScroll({
+    target: theaterRef,
+    offset: ["start start", "end end"]
+  });
+
+  const theaterScale = useTransform(theaterProgress, [0, 0.7, 1], [0.72, 1.05, 1.05]);
+  const theaterWidth = useTransform(theaterProgress, [0, 0.7], ["min(calc(100% - 40px), 1100px)", "100%"]);
+  const theaterBorderRadius = useTransform(theaterProgress, [0, 0.6], ["24px", "0px"]);
+  const theaterBorderWidth = useTransform(theaterProgress, [0, 0.6], ["4px", "0px"]);
+  const theaterGlowOpacity = useTransform(theaterProgress, [0, 0.4, 0.8], [0.35, 0.9, 0.1]);
+  const hudOpacity = useTransform(theaterProgress, [0.35, 0.6], [1, 0]);
+
+  // Live ticking timecode for brutalist film overlay
+  useEffect(() => {
+    let hours = 0;
+    let minutes = 14;
+    let seconds = 23;
+    let frames = 18;
+
+    const interval = setInterval(() => {
+      frames++;
+      if (frames >= 24) {
+        frames = 0;
+        seconds++;
+        if (seconds >= 60) {
+          seconds = 0;
+          minutes++;
+          if (minutes >= 60) {
+            minutes = 0;
+            hours++;
+          }
+        }
+      }
+
+      const pad = (num) => String(num).padStart(2, "0");
+      setTimecode(`${pad(hours)}:${pad(minutes)}:${pad(seconds)}:${pad(frames)}`);
+    }, 1000 / 24); // 24 fps tick
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const toggleMute = () => {
+    if (videoRef.current) {
+      const nextMute = !videoRef.current.muted;
+      videoRef.current.muted = nextMute;
+      setIsMuted(nextMute);
+    }
+  };
 
   useEffect(() => {
     document.body.classList.toggle("dark", true);
   }, []);
+
+  useEffect(() => {
+    document.body.classList.toggle("menu-open", menuOpen);
+  }, [menuOpen]);
+
+  // Shape wipe transition refs
+  const wipeOverlayRef = useRef(null);
+  const wipePathRef = useRef(null);
+  const isAnimatingRef = useRef(false);
+
+  function handleNavClick(e, targetId) {
+    if (window.innerWidth > 640) {
+      setMenuOpen(false);
+      return;
+    }
+
+    e.preventDefault();
+
+    if (isAnimatingRef.current) return;
+    isAnimatingRef.current = true;
+
+    if (wipeOverlayRef.current) {
+      wipeOverlayRef.current.style.visibility = "visible";
+      wipeOverlayRef.current.style.pointerEvents = "auto";
+    }
+
+    // Path phases for soft polygon wave animation upwards
+    // initialPath represents bottom flat line
+    const initialPath = "M 0 100 Q 50 100 100 100 L 100 100 Q 50 100 0 100 Z";
+    // midPath1 curves top edge up
+    const midPath1 = "M 0 60 Q 50 20 100 60 L 100 100 Q 50 100 0 100 Z";
+    // midPath2 hits top, fully filling screen
+    const midPath2 = "M 0 0 Q 50 0 100 0 L 100 100 Q 50 100 0 100 Z";
+
+    // midPath3 curves bottom edge up to reveal next section
+    const midPath3 = "M 0 0 Q 50 0 100 0 L 100 40 Q 50 80 0 40 Z";
+    // endPath top line flat, completely empty
+    const endPath = "M 0 0 Q 50 0 100 0 L 100 0 Q 50 0 0 0 Z";
+
+    anime({
+      targets: wipePathRef.current,
+      d: [
+        { value: midPath1, duration: 300, easing: "easeInQuad" },
+        { value: midPath2, duration: 300, easing: "easeOutQuad" },
+      ],
+      complete: () => {
+        setMenuOpen(false);
+
+        const targetElement = document.querySelector(targetId);
+        if (targetElement) {
+          targetElement.scrollIntoView({ behavior: "instant" });
+        }
+
+        anime({
+          targets: wipePathRef.current,
+          d: [
+            { value: midPath3, duration: 300, easing: "easeInQuad" },
+            { value: endPath, duration: 300, easing: "easeOutQuad" },
+          ],
+          complete: () => {
+            isAnimatingRef.current = false;
+            if (wipeOverlayRef.current) {
+              wipeOverlayRef.current.style.visibility = "hidden";
+              wipeOverlayRef.current.style.pointerEvents = "none";
+            }
+            if (wipePathRef.current) {
+              wipePathRef.current.setAttribute("d", initialPath);
+            }
+          },
+        });
+      },
+    });
+  }
+
+  function closeMenu() {
+    setMenuOpen(false);
+  }
 
   useEffect(() => {
     const scene = heroSceneRef.current;
@@ -331,7 +621,7 @@ export default function Home() {
     if (!scene || !stage) return;
 
     const lenis = new Lenis({
-      duration: 1.5,
+      duration: 1.2,
       lerp: 0.1,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
       direction: "vertical",
@@ -339,21 +629,27 @@ export default function Home() {
       smooth: true,
       mouseMultiplier: 1,
       smoothTouch: false,
-      touchMultiplier: 2,
+      touchMultiplier: 1.5,
       infinite: false,
     });
 
     let coords = null;
     const updateCoords = () => {
       const hero = scene;
+      const stageEl = stage;
       const servicesLanding = document.querySelector(".services-card-landing");
       const aboutLanding = document.querySelector(".about-card-landing");
 
-      if (!hero) return;
+      if (!hero || !stageEl) return;
 
-      const heroRect = hero.getBoundingClientRect();
-      const basePageX = heroRect.left + window.scrollX + heroRect.width / 2;
-      const basePageY = heroRect.top + window.scrollY + heroRect.height / 2;
+      // Restore original base coordinate calculation logic
+      const originalTransform = stageEl.style.transform;
+      stageEl.style.transform = "none";
+      const stageRect = stageEl.getBoundingClientRect();
+      stageEl.style.transform = originalTransform;
+
+      const basePageX = stageRect.left + window.scrollX + stageRect.width / 2;
+      const basePageY = stageRect.top + window.scrollY + stageRect.height / 2;
 
       let servicesShiftX = 0;
       let servicesShiftY = 0;
@@ -402,8 +698,6 @@ export default function Home() {
         return;
       }
 
-      if (!coords) return;
-
       const servicesSection = document.getElementById("services");
       const aboutSection = document.getElementById("about");
       const servicesTop = servicesSection ? (servicesSection.getBoundingClientRect().top + scroll) : window.innerHeight;
@@ -414,21 +708,23 @@ export default function Home() {
       let rotation = 0;
       let scale = 1;
 
-      const servicesScale = 0.8;
-      const aboutScale = 0.8;
+      // Calculate dynamic scale to match 350px landing zone
+      const cardWidth = 0.147 * window.innerWidth;
+      const servicesScale = 350 / cardWidth; 
+      const aboutScale = 350 / cardWidth;
 
       if (scroll <= servicesTop) {
         const p1 = Math.min(Math.max(scroll / servicesTop, 0), 1);
         const ease1 = p1 * p1 * (3 - 2 * p1);
-        x = ease1 * coords.services.x;
-        y = ease1 * coords.services.y;
+        x = ease1 * (coords?.services?.x || 0);
+        y = ease1 * (coords?.services?.y || 0);
         rotation = ease1 * 180;
         scale = 1 - ease1 * (1 - servicesScale);
       } else {
         const p2 = Math.min(Math.max((scroll - servicesTop) / (aboutTop - servicesTop), 0), 1);
         const ease2 = p2 * p2 * (3 - 2 * p2);
-        x = coords.services.x + ease2 * (coords.about.x - coords.services.x);
-        y = coords.services.y + ease2 * (coords.about.y - coords.services.y);
+        x = (coords?.services?.x || 0) + ease2 * ((coords?.about?.x || 0) - (coords?.services?.x || 0));
+        y = (coords?.services?.y || 0) + ease2 * ((coords?.about?.y || 0) - (coords?.services?.y || 0));
         rotation = 180 + ease2 * 180;
         scale = servicesScale - ease2 * (servicesScale - aboutScale);
       }
@@ -495,63 +791,88 @@ export default function Home() {
             <span className="toggle-thumb"></span>
           </span>
         </button>
-        <a className="contact-link" href="#contact">Contact</a>
+        <button
+          className="hamburger-btn"
+          type="button"
+          aria-label="Toggle menu"
+          aria-expanded={menuOpen}
+          onClick={() => setMenuOpen((v) => !v)}
+        >
+          <span className="hamburger-line"></span>
+        </button>
       </header>
+
+      <div className="mobile-nav-drawer" aria-hidden={!menuOpen}>
+        <a href="#home" onClick={(e) => handleNavClick(e, '#home')}>Home</a>
+        <a href="#about" onClick={(e) => handleNavClick(e, '#about')}>About</a>
+        <a href="#projects" onClick={(e) => handleNavClick(e, '#projects')}>Projects</a>
+        <a href="#journal" onClick={(e) => handleNavClick(e, '#journal')}>Blogs</a>
+        <a href="#contact" onClick={(e) => handleNavClick(e, '#contact')}>Contact</a>
+      </div>
+
+      <div
+        className="shape-wipe-overlay"
+        ref={wipeOverlayRef}
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          width: "100%",
+          height: "100%",
+          zIndex: 9999, // ensures it covers the nav drawer and everything
+          pointerEvents: "none",
+          visibility: "hidden",
+        }}
+      >
+        <svg
+          viewBox="0 0 100 100"
+          preserveAspectRatio="none"
+          style={{ width: "100%", height: "100%" }}
+        >
+          <path
+            ref={wipePathRef}
+            d="M 0 100 Q 50 100 100 100 L 100 100 Q 50 100 0 100 Z"
+            fill="var(--surface)"
+          />
+        </svg>
+      </div>
 
       <main>
         <div className="hero-scene" id="home" aria-labelledby="hero-title" ref={heroSceneRef}>
           <ShaderBackground className="hero-bg" smokeColor="#E3142A" />
-          <div className="hero-brand-block" id="hero-title">
-            <div className="hero-brand-main">
-              RAHUL<span className="brand-reg">®</span>
-            </div>
-            <div className="hero-brand-sub">FILM <span className="dot">•</span> & <span className="dot">•</span> EDIT</div>
-          </div>
           <section className="hero">
-            <div className="hero-abstract hero-abstract-top-right">
-              <span className="dot-indicator"></span> Available for projects
-              <br/><span className="sub-date">EARLY FEB 2025</span>
+            <div className="hero-top-left">
+              <div className="hero-info">
+                <span className="info-label">A Rahul portfolio</span>
+                <span className="info-label">Project: RAHUL®</span>
+                <span className="info-label">Director</span>
+                <span className="info-label">Product Design</span>
+              </div>
+              <div className="hero-status">
+                <span className="dot-indicator"></span> Available for projects
+                <br/><span className="sub-date">EARLY FEB 2025</span>
+              </div>
             </div>
-            <div className="hero-abstract hero-abstract-right">
-              <h2 className="beyond">Raw Motion.</h2>
-              <h2 className="vision">Cut to<br/>Perfection.</h2>
-            </div>
-            
-            <div className="hero-abstract hero-abstract-bottom-left">
-              <p className="hero-vision-text">
-                <span className="slash">/</span> We direct commercials, music videos,<br/>
-                and documentaries <span className="hand-text" style={{fontSize: '1.1em'}}>cutting stories with</span><br/>
-                rhythm, grit, and visual weight.
-              </p>
-              
-              <div className="trusted-by">
-                <span className="trusted-label">TRUSTED BY:</span>
-                <div className="trusted-logos">
-                   <span className="logo-placeholder">Logoipsum</span>
-                   <span className="logo-placeholder">Logoipsum</span>
-                   <span className="logo-placeholder">Logoipsum</span>
+
+            <div className="hero-main-display">
+              <div className="display-text-container">
+                <span className="hero-letter">R</span>
+                <div className="hero-card-container">
+                  <div className="portrait-stage" aria-label="Portrait card" ref={portraitStageRef}>
+                    <div className="portrait-card portrait-card-back">
+                      <img src="/images/IMG_6471.jpg" alt="Back portrait" />
+                    </div>
+                    <div className="portrait-card portrait-card-front">
+                      <img
+                        src="/images/IMG_5775.PNG"
+                        alt="Portrait of designer Rahul"
+                      />
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
-
-            <div className="hero-abstract hero-abstract-bottom-right">
-                <a href="#projects" className="abstract-btn">WORK <span className="arrow">↘</span></a>
-                <a href="#contact" className="abstract-btn">PRICING <span className="arrow">↘</span></a>
-            </div>
-
-            <div className="portrait-stage" aria-label="Portrait card" ref={portraitStageRef}>
-              <div className="portrait-card portrait-card-back">
-                <img src="/images/IMG_6471.jpg" alt="Back portrait" />
-              </div>
-              <div className="portrait-card portrait-card-front">
-                <img
-                  src="/images/IMG_5775.PNG"
-                  alt="Portrait of designer Rahul"
-                />
-              </div>
-              <div className="circle-badge" aria-hidden="true">
-                <span>100%</span>
-                <span>raw</span>
+                <span className="hero-letter">H</span>
+                <span className="hero-letter">U</span>
+                <span className="hero-letter">L</span>
               </div>
             </div>
           </section>
@@ -559,78 +880,205 @@ export default function Home() {
 
         <section className="services" id="services" aria-labelledby="services-title">
           <div className="services-content-wrapper">
-            <div className="section-intro">
-              <h2 id="services-title">what I can do for you</h2>
-              <p>
-                As a digital designer, I am a visual storyteller, crafting experiences that connect deeply
-                and spark creativity.
-              </p>
-            </div>
-            <Accordion items={services} />
+            <ScrollReveal variant="wipe">
+              <div className="section-intro">
+                <h2 id="services-title">what I can do for you</h2>
+                <p>
+                  As a digital designer, I am a visual storyteller, crafting experiences that connect deeply
+                  and spark creativity.
+                </p>
+              </div>
+            </ScrollReveal>
+            <ScrollReveal delay={200} variant="fluid-flow">
+              <Accordion items={services} />
+            </ScrollReveal>
           </div>
           <div className="services-card-landing"></div>
         </section>
 
         <section className="about" id="about" aria-labelledby="about-title">
           <div className="about-content-wrapper">
-            <div className="section-intro">
-              <p className="eyebrow">Who am I?</p>
-              <h2 id="about-title">About me</h2>
-              <p>
-                I am a digital designer and Framer developer passionate about crafting <span className="hand-text">unforgettable</span>,
-                user-centered experiences.
-              </p>
-              <p>
-                With a strong foundation in visual design and a deep understanding of interactive systems,
-                I bring ideas to life through thoughtful design, chaotic-yet-organized layouts, and expressive typography.
-              </p>
-            </div>
+            <ScrollReveal variant="wipe">
+              <div className="section-intro">
+                <p className="eyebrow">Who am I?</p>
+                <h2 id="about-title">About me</h2>
+                <p>
+                  I am a digital designer and Framer developer passionate about crafting <span className="hand-text">unforgettable</span>,
+                  user-centered experiences.
+                </p>
+                <p>
+                  With a strong foundation in visual design and a deep understanding of interactive systems,
+                  I bring ideas to life through thoughtful design, chaotic-yet-organized layouts, and expressive typography.
+                </p>
+              </div>
+            </ScrollReveal>
             <div className="about-panel">
-              <div className="stats-grid">
-                <article>
-                  <strong>12</strong>
-                  <span>Years of experience</span>
-                </article>
-                <article>
-                  <strong>270</strong>
-                  <span>Completed projects</span>
-                </article>
-                <article>
-                  <strong>50+</strong>
-                  <span>Clients worldwide</span>
-                </article>
-              </div>
-              <div className="experience-list">
-                <h3>Discover my journey in design</h3>
-                <div className="timeline-row">
-                  <span>2023 - Present</span>
-                  <strong>Creative Art Director</strong>
-                  <small>NovaWorks Agency</small>
+              <ScrollReveal delay={150} variant="fluid-flow">
+                <div className="stats-grid">
+                  <article>
+                    <strong>12</strong>
+                    <span>Years of experience</span>
+                  </article>
+                  <article>
+                    <strong>270</strong>
+                    <span>Completed projects</span>
+                  </article>
+                  <article>
+                    <strong>50+</strong>
+                    <span>Clients worldwide</span>
+                  </article>
                 </div>
-                <div className="timeline-row">
-                  <span>2020 - 2023</span>
-                  <strong>Senior UI/UX Designer</strong>
-                  <small>BrightLabs Digital</small>
+              </ScrollReveal>
+              <ScrollReveal delay={300} variant="glitch">
+                <div className="experience-list">
+                  <h3>Discover my journey in design</h3>
+                  <div className="timeline-row">
+                    <span>2023 - Present</span>
+                    <strong>Creative Art Director</strong>
+                    <small>NovaWorks Agency</small>
+                  </div>
+                  <div className="timeline-row">
+                    <span>2020 - 2023</span>
+                    <strong>Senior UI/UX Designer</strong>
+                    <small>BrightLabs Digital</small>
+                  </div>
+                  <div className="timeline-row">
+                    <span>2017 - 2020</span>
+                    <strong>Digital Designer</strong>
+                    <small>Independent Studio</small>
+                  </div>
                 </div>
-                <div className="timeline-row">
-                  <span>2017 - 2020</span>
-                  <strong>Digital Designer</strong>
-                  <small>Independent Studio</small>
-                </div>
-              </div>
+              </ScrollReveal>
             </div>
           </div>
           <div className="about-card-landing"></div>
         </section>
 
-        <section className="projects" id="projects" aria-labelledby="projects-title">
-          <div className="section-heading-wide">
-            <h2 id="projects-title">Featured Projects</h2>
-            <p>
-              Selected work blending strategy with creativity, solving real problems through thoughtful
-              design and impactful storytelling.
-            </p>
+        {/* Cinematic Theater Section with Scroll Snapping / Pinning */}
+        <section className="theater-track" ref={theaterRef}>
+          <div className="theater-sticky">
+            <div className="theater-grain" />
+            <div className="theater-light-beam" />
+            
+            {/* Main Cinema Screen Container */}
+            <motion.div 
+              className="theater-container"
+              style={{
+                scale: theaterScale,
+                width: theaterWidth,
+              }}
+            >
+              {/* Dynamic Backglow reflecting projection */}
+              <motion.div 
+                className="theater-ambient-glow"
+                style={{ opacity: theaterGlowOpacity }}
+              />
+
+              {/* The high-contrast outer frame */}
+              <motion.div 
+                className="theater-frame-outer"
+                style={{ 
+                  borderRadius: theaterBorderRadius,
+                  borderWidth: theaterBorderWidth 
+                }}
+              >
+                {/* Yellow caution stripe on the top right */}
+                <motion.div 
+                  className="caution-strip"
+                  style={{ opacity: hudOpacity }}
+                />
+
+                {/* Left film reel sprocket holes */}
+                <motion.div 
+                  className="film-perforations film-perforations-left"
+                  style={{ opacity: hudOpacity }}
+                >
+                  {Array.from({ length: 8 }).map((_, i) => (
+                    <div key={i} className="perforation-hole" />
+                  ))}
+                </motion.div>
+
+                {/* Right film reel sprocket holes */}
+                <motion.div 
+                  className="film-perforations film-perforations-right"
+                  style={{ opacity: hudOpacity }}
+                >
+                  {Array.from({ length: 8 }).map((_, i) => (
+                    <div key={i} className="perforation-hole" />
+                  ))}
+                </motion.div>
+
+                {/* Cinematic HUD Overlays */}
+                <motion.div 
+                  className="theater-hud"
+                  style={{ opacity: hudOpacity }}
+                >
+                  <div className="theater-hud-top">
+                    <span className="hud-tag hud-tag-rec">REC [RAW EDIT]</span>
+                    <span className="hud-crosshair">+</span>
+                    <span className="hud-tag">SCREEN 01</span>
+                  </div>
+                  
+                  <div />
+
+                  <div className="theater-hud-bottom">
+                    {/* Live ticking timecode */}
+                    <div className="hud-timecode">
+                      TC {timecode}
+                    </div>
+
+                    {/* Animated audio waves */}
+                    <div className="audio-visualizer">
+                      <div className="visualizer-bar" style={{ animationPlayState: isMuted ? 'paused' : 'running' }} />
+                      <div className="visualizer-bar" style={{ animationPlayState: isMuted ? 'paused' : 'running' }} />
+                      <div className="visualizer-bar" style={{ animationPlayState: isMuted ? 'paused' : 'running' }} />
+                      <div className="visualizer-bar" style={{ animationPlayState: isMuted ? 'paused' : 'running' }} />
+                      <div className="visualizer-bar" style={{ animationPlayState: isMuted ? 'paused' : 'running' }} />
+                    </div>
+                  </div>
+                </motion.div>
+
+                {/* The actual HTML5 video */}
+                <div className="theater-video-wrapper">
+                  <video
+                    ref={videoRef}
+                    className="theater-video"
+                    src="/images/RLTCA.mp4"
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                  />
+                </div>
+              </motion.div>
+            </motion.div>
+
+            {/* Volume & Scroll Controls */}
+            <div className="theater-controls">
+              <button 
+                className="theater-mute-btn" 
+                type="button"
+                onClick={toggleMute}
+              >
+                {isMuted ? "🔇 UNMUTE AUDIO" : "🔊 MUTE AUDIO"}
+              </button>
+              <div className="scroll-tip">
+                Scroll to Zoom
+              </div>
+            </div>
           </div>
+        </section>
+
+        <section className="projects" id="projects" aria-labelledby="projects-title">
+          <ScrollReveal variant="wipe">
+            <div className="section-heading-wide">
+              <h2 id="projects-title">Featured Projects</h2>
+              <p>
+                Selected work blending strategy with creativity, solving real problems through thoughtful
+                design and impactful storytelling.
+              </p>
+            </div>
+          </ScrollReveal>
           <div className="featured-projects" ref={projectsContainerRef}>
             {featuredProjects.map((project, index) => (
               <FeaturedProjectCard
@@ -643,125 +1091,161 @@ export default function Home() {
             ))}
           </div>
           <div className="more-projects">
-            <div className="divider-title">
-              <h3>More Projects</h3>
-              <span></span>
-            </div>
+            <ScrollReveal variant="wipe">
+              <div className="divider-title">
+                <h3>More Projects</h3>
+                <span></span>
+              </div>
+            </ScrollReveal>
             <div className="project-grid">
-              {moreProjects.map((project) => (
-                <article className="project-card" key={project.title}>
-                  <img src={project.image} alt={project.title} loading="lazy" />
-                  <MetaRow items={[project.category, project.year]} />
-                  <h3>{project.title}</h3>
-                  <p>{project.description}</p>
-                </article>
+              {moreProjects.map((project, index) => (
+                <ScrollReveal key={project.title} delay={(index % 2) * 150} variant="fluid-flow">
+                  <article className="project-card">
+                    <img src={project.image} alt={project.title} loading="lazy" />
+                    <MetaRow items={[project.category, project.year]} />
+                    <h3>{project.title}</h3>
+                    <p>{project.description}</p>
+                  </article>
+                </ScrollReveal>
               ))}
             </div>
           </div>
         </section>
 
         <section className="testimonials" aria-labelledby="testimonials-title">
-          <div className="section-heading-wide">
-            <h2 id="testimonials-title">What clients say</h2>
-            <p>Results from collaborative work across brand identity, web design, and product interfaces.</p>
-          </div>
+          <ScrollReveal variant="wipe">
+            <div className="section-heading-wide">
+              <h2 id="testimonials-title">What clients say</h2>
+              <p>Results from collaborative work across brand identity, web design, and product interfaces.</p>
+            </div>
+          </ScrollReveal>
           <div className="testimonial-grid">
-            <article>
-              <p>Duncan truly understood my vision and turned it into impactful designs. The results went beyond my expectations.</p>
-              <strong>John Harris</strong>
-              <span>Marketing Director</span>
-            </article>
-            <article className="metric-card">
-              <span>98%</span>
-              <p>Satisfaction Rate</p>
-            </article>
-            <article>
-              <p>He took the time to understand our goals and delivered a design that resonated perfectly with our audience.</p>
-              <strong>Michael Lee</strong>
-              <span>Product Manager</span>
-            </article>
-            <article className="metric-card accent">
-              <span>200%</span>
-              <p>Client growth impact</p>
-            </article>
-            <article>
-              <p>His design skills are unmatched. He transformed my ideas into a high-performing, visually striking website.</p>
-              <strong>Sarah Johnson</strong>
-              <span>CEO</span>
-            </article>
-            <article>
-              <p>As a small business owner, I appreciated how stress-free Duncan made the process.</p>
-              <strong>Laura Bennett</strong>
-              <span>Small Business Owner</span>
-            </article>
+            {[
+              {
+                text: "Duncan truly understood my vision and turned it into impactful designs. The results went beyond my expectations.",
+                name: "John Harris",
+                title: "Marketing Director"
+              },
+              {
+                metric: "98%",
+                label: "Satisfaction Rate",
+                isMetric: true
+              },
+              {
+                text: "He took the time to understand our goals and delivered a design that resonated perfectly with our audience.",
+                name: "Michael Lee",
+                title: "Product Manager"
+              },
+              {
+                metric: "200%",
+                label: "Client growth impact",
+                isMetric: true,
+                accent: true
+              },
+              {
+                text: "His design skills are unmatched. He transformed my ideas into a high-performing, visually striking website.",
+                name: "Sarah Johnson",
+                title: "CEO"
+              },
+              {
+                text: "As a small business owner, I appreciated how stress-free Duncan made the process.",
+                name: "Laura Bennett",
+                title: "Small Business Owner"
+              }
+            ].map((item, index) => (
+              <ScrollReveal key={index} delay={(index % 3) * 100} variant="fluid-flow">
+                {item.isMetric ? (
+                  <article className={`metric-card ${item.accent ? 'accent' : ''}`}>
+                    <span>{item.metric}</span>
+                    <p>{item.label}</p>
+                  </article>
+                ) : (
+                  <article>
+                    <p>{item.text}</p>
+                    <strong>{item.name}</strong>
+                    <span>{item.title}</span>
+                  </article>
+                )}
+              </ScrollReveal>
+            ))}
           </div>
         </section>
 
         <section className="journal" id="journal" aria-labelledby="journal-title">
-          <div className="section-heading-wide">
-            <h2 id="journal-title">Design Insights &amp; Ideas</h2>
-            <p>Articles on design trends, creative process, workflow, typography, and brand systems.</p>
-          </div>
+          <ScrollReveal variant="wipe">
+            <div className="section-heading-wide">
+              <h2 id="journal-title">Design Insights &amp; Ideas</h2>
+              <p>Articles on design trends, creative process, workflow, typography, and brand systems.</p>
+            </div>
+          </ScrollReveal>
           <div className="blog-layout">
-            <article className="pinned-post">
-              <img src={pinnedPost.image} alt={pinnedPost.title} loading="lazy" />
-              <MetaRow items={[pinnedPost.category, pinnedPost.date, "Pinned"]} />
-              <h3>{pinnedPost.title}</h3>
-              <p>{pinnedPost.description}</p>
-            </article>
+            <ScrollReveal delay={150} variant="glitch">
+              <article className="pinned-post">
+                <img src={pinnedPost.image} alt={pinnedPost.title} loading="lazy" />
+                <MetaRow items={[pinnedPost.category, pinnedPost.date, "Pinned"]} />
+                <h3>{pinnedPost.title}</h3>
+                <p>{pinnedPost.description}</p>
+              </article>
+            </ScrollReveal>
             <div className="blog-grid">
-              {otherPosts.map((post) => (
-                <article className="blog-card" key={post.title}>
-                  <img src={post.image} alt={post.title} loading="lazy" />
-                  <MetaRow items={[post.category, post.date]} />
-                  <h3>{post.title}</h3>
-                  <p>{post.description}</p>
-                </article>
+              {otherPosts.map((post, index) => (
+                <ScrollReveal key={post.title} delay={(index % 2) * 150} variant="fluid-flow">
+                  <article className="blog-card">
+                    <img src={post.image} alt={post.title} loading="lazy" />
+                    <MetaRow items={[post.category, post.date]} />
+                    <h3>{post.title}</h3>
+                    <p>{post.description}</p>
+                  </article>
+                </ScrollReveal>
               ))}
             </div>
           </div>
         </section>
 
         <section className="contact" id="contact" aria-labelledby="contact-title">
-          <div className="contact-image">
-            <img
-              src="/images/IMG_5775.PNG"
-              alt="Rahul portrait"
-            />
-            <div className="circle-badge" aria-hidden="true">
-              <span>Let us</span>
-              <span>build</span>
+          <ScrollReveal variant="wipe">
+            <div className="contact-image">
+              <img
+                src="/images/IMG_5775.PNG"
+                alt="Rahul portrait"
+              />
+              <div className="circle-badge" aria-hidden="true">
+                <span>Let us</span>
+                <span>build</span>
+              </div>
             </div>
-          </div>
-          <div className="contact-copy">
-            <h2 id="contact-title">Let's work together</h2>
-            <p>Let us build something impactful together, whether it is your brand, your website, or your next big idea.</p>
-            <form className="contact-form" onSubmit={handleSubmit}>
-              <label>
-                <span>Name</span>
-                <input name="name" autoComplete="name" required />
-              </label>
-              <label>
-                <span>Email</span>
-                <input name="email" type="email" autoComplete="email" required />
-              </label>
-              <label>
-                <span>Service Needed?</span>
-                <select name="service" required defaultValue="">
-                  <option value="">Choose a service</option>
-                  <option>UI/UX Design</option>
-                  <option>Graphic Design</option>
-                  <option>Web Design</option>
-                  <option>Branding</option>
-                </select>
-              </label>
-              <label>
-                <span>What can I help you with?</span>
-                <textarea name="message" rows="5"></textarea>
-              </label>
-              <button type="submit">{submitText}</button>
-            </form>
-          </div>
+          </ScrollReveal>
+          <ScrollReveal delay={200} variant="glitch">
+            <div className="contact-copy">
+              <h2 id="contact-title">Let's work together</h2>
+              <p>Let us build something impactful together, whether it is your brand, your website, or your next big idea.</p>
+              <form className="contact-form" onSubmit={handleSubmit}>
+                <label>
+                  <span>Name</span>
+                  <input name="name" autoComplete="name" required />
+                </label>
+                <label>
+                  <span>Email</span>
+                  <input name="email" type="email" autoComplete="email" required />
+                </label>
+                <label>
+                  <span>Service Needed?</span>
+                  <select name="service" required defaultValue="">
+                    <option value="">Choose a service</option>
+                    <option>UI/UX Design</option>
+                    <option>Graphic Design</option>
+                    <option>Web Design</option>
+                    <option>Branding</option>
+                  </select>
+                </label>
+                <label>
+                  <span>What can I help you with?</span>
+                  <textarea name="message" rows="5"></textarea>
+                </label>
+                <button type="submit">{submitText}</button>
+              </form>
+            </div>
+          </ScrollReveal>
         </section>
       </main>
 
