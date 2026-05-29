@@ -246,6 +246,21 @@ section {
 
 .hero-scene {
   position: relative;
+}
+
+.hero-scene::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 25vh;
+  background: linear-gradient(to bottom, transparent 0%, #000 100%);
+  pointer-events: none;
+  z-index: 10;
+}
+
+.hero-scene {
   height: max(100vh, 800px);
   overflow: visible;
   z-index: 10;
@@ -724,6 +739,8 @@ section {
 
 .services {
   position: relative;
+  background-color: #000;
+  transition: background-color 0.5s ease;
   display: grid;
   grid-template-columns: 1fr;
   gap: 0;
@@ -1675,3 +1692,6 @@ section {
     animation-iteration-count: 1 !important;
   }
 }
+
+
+

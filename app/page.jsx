@@ -478,6 +478,14 @@ export default function Home() {
   const pinnedPost = posts.find((post) => post.pinned) || posts[0];
   const otherPosts = posts.filter((post) => post !== pinnedPost);
 
+  // Services section reference
+  const servicesSectionRef = useRef(null);
+  const { scrollYProgress: servicesProgress } = useScroll({
+    target: servicesSectionRef,
+    offset: ["start 50%", "start 10%"]
+  });
+  const servicesOpacity = useTransform(servicesProgress, [0, 0.4, 1], [0, 0, 1]);
+
   // Theater section references and scroll transforms
   const theaterRef = useRef(null);
   const videoRef = useRef(null);
@@ -741,22 +749,24 @@ export default function Home() {
           </section>
         </div>
 
-        <section className="services" id="services" aria-labelledby="services-title">
-          <GradientBackground />
-          <div className="services-content-wrapper">
-            <ScrollReveal variant="wipe">
-              <div className="section-intro">
-                <h2 id="services-title">what I can do for you</h2>
-                <p>
-                  As a digital designer, I am a visual storyteller, crafting experiences that connect deeply
-                  and spark creativity.
-                </p>
-              </div>
-            </ScrollReveal>
-            <ScrollReveal delay={200} variant="fluid-flow">
-              <Accordion items={services} />
-            </ScrollReveal>
-          </div>
+        <section className="services" id="services" aria-labelledby="services-title" ref={servicesSectionRef}>
+          <motion.div style={{ opacity: servicesOpacity, position: "absolute", top: 0, left: 0, right: 0, bottom: 0, zIndex: -1 }}><GradientBackground /></motion.div>
+          <motion.div style={{ opacity: servicesOpacity }}>
+            <div className="services-content-wrapper">
+              <ScrollReveal variant="wipe">
+                <div className="section-intro">
+                  <h2 id="services-title">what I can do for you</h2>
+                  <p>
+                    As a digital designer, I am a visual storyteller, crafting experiences that connect deeply
+                    and spark creativity.
+                  </p>
+                </div>
+              </ScrollReveal>
+              <ScrollReveal delay={200} variant="fluid-flow">
+                <Accordion items={services} />
+              </ScrollReveal>
+            </div>
+          </motion.div>
           <div className="services-card-landing" aria-hidden="true"></div>
         </section>
 
@@ -1142,3 +1152,7 @@ export default function Home() {
     </div>
   );
 }
+
+
+
+
