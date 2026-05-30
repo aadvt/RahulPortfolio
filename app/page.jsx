@@ -5,6 +5,7 @@ import Lenis from "lenis";
 import { motion, useScroll, useTransform } from "framer-motion";
 import anime from "animejs";
 import ShaderBackground from "../components/ShaderBackground";
+import InfiniteGallery from "../components/InfiniteGallery";
 
 const services = [
   {
@@ -1364,6 +1365,29 @@ export default function Home() {
                   </article>
                 </ScrollReveal>
               ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="infinite-gallery-section" aria-label="Infinite image gallery">
+          <div className="infinite-gallery-container">
+            <InfiniteGallery 
+              images={[
+                "/images/reel/reel-1.png",
+                "/images/reel/reel-2.png",
+                "/images/reel/reel-3.png",
+                "/images/reel/reel-4.png",
+                "/images/reel/reel-5.png",
+                "/images/reel/reel-6.png",
+                "/images/IMG_5775.PNG",
+                "/images/IMG_6471.jpg"
+              ]}
+              className="infinite-gallery-canvas"
+            />
+            <div className="gallery-overlay-text">
+              <h2 className="gallery-quote">
+                <span className="italic-text">I create;</span> therefore I am
+              </h2>
             </div>
           </div>
         </section>

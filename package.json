@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@paper-design/shaders-react": "^0.0.76",
+    "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.6.1",
     "animejs": "^3.2.2",
     "framer-motion": "^12.38.0",
@@ -18,5 +19,10 @@
     "react": "latest",
     "react-dom": "latest",
     "three": "^0.184.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.1",
+    "@types/react": "^19.2.15",
+    "typescript": "^6.0.3"
   }
 }
