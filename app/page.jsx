@@ -469,6 +469,8 @@ export default function Home() {
   const heroSceneRef = useRef(null);
   const portraitStageRef = useRef(null);
   const projectsContainerRef = useRef(null);
+  const theaterSectionRef = useRef(null);
+  const mousePosRef = useRef({ x: 600, y: 400 });
   const { scrollYProgress } = useScroll({
     target: projectsContainerRef,
     offset: ["start start", "end end"]
@@ -563,62 +565,78 @@ export default function Home() {
       infinite: false,
     });
 
-    let coords = null;
-    let servicesTopPage = window.innerHeight;
+    // Mouse tracking for cursor-following circle
+    const handleMouseMove = (e) => {
+      mousePosRef.current = { x: e.clientX, y: e.clientY };
+    };
+    window.addEventListener("mousemove", handleMouseMove);
+
+    // Smoothed cursor position for buttery following
+    let smoothMouse = { x: mousePosRef.current.x, y: mousePosRef.current.y };
+
+    let sectionBounds = { heroBottom: 0, theaterTop: 0, theaterBottom: 0, aboutTop: 0, aboutBottom: 0 };
+    let baseCoords = { x: 0, y: 0 };
+    let aboutShift = { x: 0, y: 0 };
+
     const updateCoords = () => {
-      const hero = scene;
       const stageEl = stage;
-      const servicesLanding = document.querySelector(".services-card-landing");
-      const servicesSection = document.getElementById("services");
+      const theaterEl = theaterSectionRef.current;
       const aboutLanding = document.querySelector(".about-card-landing");
+      const aboutSection = document.getElementById("about");
 
-      if (!hero || !stageEl) return;
+      if (!stageEl) return;
 
-      servicesTopPage = servicesSection ? servicesSection.offsetTop : window.innerHeight;
+      // Get hero scene bottom
+      const heroSceneEl = scene;
+      const heroRect = heroSceneEl.getBoundingClientRect();
+      sectionBounds.heroBottom = heroRect.bottom + window.scrollY;
 
-      // Restore original base coordinate calculation logic
+      // Get theater section bounds
+      if (theaterEl) {
+        const tRect = theaterEl.getBoundingClientRect();
+        sectionBounds.theaterTop = tRect.top + window.scrollY;
+        sectionBounds.theaterBottom = tRect.bottom + window.scrollY;
+      }
+
+      // Get about section bounds
+      if (aboutSection) {
+        const aRect = aboutSection.getBoundingClientRect();
+        sectionBounds.aboutTop = aRect.top + window.scrollY;
+        sectionBounds.aboutBottom = aRect.bottom + window.scrollY;
+      }
+
+      // Compute base position (card's natural resting spot)
       const originalTransform = stageEl.style.transform;
       stageEl.style.transform = "none";
       const stageRect = stageEl.getBoundingClientRect();
       stageEl.style.transform = originalTransform;
 
-      const basePageX = stageRect.left + window.scrollX + stageRect.width / 2;
-      const basePageY = stageRect.top + window.scrollY + stageRect.height / 2;
+      baseCoords.x = stageRect.left + window.scrollX + stageRect.width / 2;
+      baseCoords.y = stageRect.top + window.scrollY + stageRect.height / 2;
 
-      let servicesShiftX = 0;
-      let servicesShiftY = 0;
-      if (servicesLanding) {
-        const rect = servicesLanding.getBoundingClientRect();
-        const landingPageX = rect.left + window.scrollX + rect.width / 2;
-        const landingPageY = rect.top + window.scrollY + rect.height / 2;
-        servicesShiftX = landingPageX - basePageX;
-        servicesShiftY = landingPageY - basePageY;
-      }
-
-      let aboutShiftX = 0;
-      let aboutShiftY = 0;
+      // Compute about-card-landing shift
       if (aboutLanding) {
         const rect = aboutLanding.getBoundingClientRect();
         const landingPageX = rect.left + window.scrollX + rect.width / 2;
         const landingPageY = rect.top + window.scrollY + rect.height / 2;
-        aboutShiftX = landingPageX - basePageX;
-        aboutShiftY = landingPageY - basePageY;
+        aboutShift.x = landingPageX - baseCoords.x;
+        aboutShift.y = landingPageY - baseCoords.y;
       }
-
-      coords = {
-        services: { x: servicesShiftX, y: servicesShiftY },
-        about: { x: aboutShiftX, y: aboutShiftY },
-      };
     };
 
     updateCoords();
-    // Re-run after a small delay to ensure loading heights are settled
     const timer = setTimeout(updateCoords, 600);
+    const timer2 = setTimeout(updateCoords, 1500);
 
-    const handleResize = () => {
-      updateCoords();
-    };
+    const handleResize = () => { updateCoords(); };
     window.addEventListener("resize", handleResize);
+
+    // Current animated values for smooth lerping
+    let currentCircleScale = 1;
+    let currentBorderRadius = 0;
+    let currentFixedX = 0;
+    let currentFixedY = 0;
+    let lastPhase = "hero";
 
     const updateHeroMotion = (scroll) => {
       if (window.innerWidth <= 768) {
@@ -631,45 +649,242 @@ export default function Home() {
         stage.style.setProperty("--stage-shift-x", "0px");
         stage.style.setProperty("--stage-scale", "1");
         stage.style.setProperty("--stage-opacity", "1");
+        stage.style.setProperty("--card-border-radius", "0px");
         scene.style.setProperty("--text-parallax", "0px");
+        stage.classList.remove("circle-mode");
         return;
       }
 
-      const servicesTop = servicesTopPage || window.innerHeight;
+      const { heroBottom, theaterTop, theaterBottom, aboutTop } = sectionBounds;
+
+      // Define transition zones
+      const heroFlipEnd = theaterTop; // Card flips as user scrolls through hero
+      const theaterMorphStart = theaterTop; // Circle morph begins
+      const theaterMorphEnd = theaterTop + 300; // Circle morph completes (300px into theater)
+      const theaterExitStart = theaterBottom - 400; // Begin unmorph
+      const theaterExitEnd = theaterBottom; // Fully unmorphed, begin about transition
+      const aboutSettleEnd = aboutTop + 600; // Card settles into about landing
 
       let x = 0;
       let y = 0;
       let rotation = 0;
+      let scale = 1;
+      let borderRadius = 0; // 0 = rectangular, 50 = full circle
+      let isFixed = false;
+      let opacity = 1;
+      let phase = "hero";
+      // circleP: 0 = card shape, 1 = full circle — used for height squishing
+      let circleP = 0;
 
-      if (scroll <= servicesTop) {
+      if (scroll < theaterMorphStart) {
+        // ===== PHASE 1: Hero scrolling (Flip + Morph & Fly Zone) =====
+        phase = "hero";
+        isFixed = false;
+
+        const morphStartZone = theaterTop - 400;
+
+        if (scroll < morphStartZone) {
+          // ----- PHASE 1a: Card Flips -----
+          const flipRange = morphStartZone - 0;
+          const p1 = Math.min(Math.max(scroll / flipRange, 0), 1);
+          const ease1 = p1 * p1 * (3 - 2 * p1); // smoothstep
+          rotation = ease1 * 180;
+          scale = 1;
+          borderRadius = 0;
+          circleP = 0;
+
+          // Slide card toward viewport center
+          const centerShiftX = 0;
+          const centerShiftY = ease1 * (theaterTop - baseCoords.y);
+          x = centerShiftX;
+          y = centerShiftY;
+
+          // Keep smoothMouse updated with the card's exact viewport position
+          const viewCenterX = window.innerWidth / 2;
+          const cardViewportY = (baseCoords.y + y) - scroll;
+          smoothMouse.x = viewCenterX;
+          smoothMouse.y = cardViewportY;
+
+        } else {
+          // ----- PHASE 1b: Card morphs to circle & flies to cursor -----
+          rotation = 180; // fully flipped
+
+          // Morph progress from 0 to 1 over the last 400px of the hero section
+          const rawMorphP = Math.min(Math.max((scroll - morphStartZone) / 400, 0), 1);
+          const morphEase = rawMorphP * rawMorphP * (3 - 2 * rawMorphP); // smoothstep
+          circleP = morphEase; // exposed to height interpolation
+
+          borderRadius = morphEase * 50;
+          scale = 1 - morphEase * 0.7; // Scale down to 0.3 (cursor circle)
+
+          // Smooth cursor following
+          const lerpFactor = 0.14;
+          smoothMouse.x += (mousePosRef.current.x - smoothMouse.x) * lerpFactor;
+          smoothMouse.y += (mousePosRef.current.y - smoothMouse.y) * lerpFactor;
+
+          // Card starts at center-top of viewport at morphStartZone
+          const startViewportX = window.innerWidth / 2;
+          const startViewportY = theaterTop - scroll;
+
+          // Interpolate viewport relative position from startViewport to smoothMouse
+          const targetViewportX = startViewportX + (smoothMouse.x - startViewportX) * morphEase;
+          const targetViewportY = startViewportY + (smoothMouse.y - startViewportY) * morphEase;
+
+          // Convert viewport coordinate to page coordinates (since isFixed is false, positioning is absolute)
+          x = targetViewportX - (window.innerWidth / 2);
+          y = (targetViewportY + scroll) - baseCoords.y;
+        }
+
         stage.style.position = "absolute";
         stage.style.top = "50%";
         stage.style.left = "50%";
         stage.style.zIndex = "100";
-        const p1 = Math.min(Math.max(scroll / servicesTop, 0), 1);
-        const ease1 = p1 * p1 * (3 - 2 * p1);
-        x = ease1 * (coords?.services?.x || 0);
-        y = ease1 * (coords?.services?.y || 0);
-        rotation = ease1 * 180;
-      } else {
-        stage.style.position = "absolute";
-        stage.style.top = "50%";
-        stage.style.left = "50%";
-        stage.style.zIndex = "100";
-        x = coords?.services?.x || 0;
-        y = coords?.services?.y || 0;
+
+      } else if (scroll >= theaterMorphStart && scroll < theaterExitStart) {
+        // ===== PHASE 2: Theater (circle morph + cursor follow) =====
+        phase = "theater";
+        isFixed = true;
         rotation = 180;
+
+        // Morph is fully complete
+        circleP = 1; // exposed to height interpolation
+        borderRadius = 50;
+        scale = 0.3; // fully shrunk
+
+        // Smooth cursor following
+        const lerpFactor = 0.14;
+        smoothMouse.x += (mousePosRef.current.x - smoothMouse.x) * lerpFactor;
+        smoothMouse.y += (mousePosRef.current.y - smoothMouse.y) * lerpFactor;
+
+        // Glued to the cursor
+        currentFixedX = smoothMouse.x;
+        currentFixedY = smoothMouse.y;
+
+        stage.style.position = "fixed";
+        stage.style.top = "0";
+        stage.style.left = "0";
+        stage.style.zIndex = "9999";
+
+      } else if (scroll >= theaterExitStart && scroll < theaterExitEnd) {
+        // ===== PHASE 2.5: Theater exit (un-morph from circle back to card) =====
+        phase = "theater-exit";
+        isFixed = true;
+        rotation = 180;
+
+        const rawExitP = Math.min(Math.max((scroll - theaterExitStart) / (theaterExitEnd - theaterExitStart), 0), 1);
+        const exitEase = rawExitP * rawExitP * (3 - 2 * rawExitP);
+        circleP = 1 - exitEase; // exposed to height interpolation
+
+        borderRadius = 50 * (1 - exitEase);
+        scale = 0.3 + exitEase * 0.7; // Scale back up to 1
+
+        // Move from cursor position toward center bottom of viewport
+        smoothMouse.x += (mousePosRef.current.x - smoothMouse.x) * 0.12;
+        smoothMouse.y += (mousePosRef.current.y - smoothMouse.y) * 0.12;
+
+        const viewCenterX = window.innerWidth / 2;
+        const viewCenterY = window.innerHeight / 2;
+
+        currentFixedX = smoothMouse.x + (viewCenterX - smoothMouse.x) * exitEase;
+        currentFixedY = smoothMouse.y + (viewCenterY - smoothMouse.y) * exitEase;
+
+        stage.style.position = "fixed";
+        stage.style.top = "0";
+        stage.style.left = "0";
+        stage.style.zIndex = "9999";
+
+      } else {
+        // ===== PHASE 3: About section (card flies to about-card-landing) =====
+        phase = "about";
+        rotation = 180;
+        borderRadius = 0;
+
+        const settleP = Math.min(Math.max((scroll - theaterExitEnd) / (aboutSettleEnd - theaterExitEnd), 0), 1);
+        const settleEase = settleP * settleP * (3 - 2 * settleP);
+
+        // Interpolate smoothly from viewport center to the absolute About landing position to eliminate jumps
+        const startAbsoluteX = (window.innerWidth / 2) - baseCoords.x;
+        const startAbsoluteY = (theaterExitEnd + window.innerHeight / 2) - baseCoords.y;
+
+        x = startAbsoluteX + settleEase * (aboutShift.x - startAbsoluteX);
+        y = startAbsoluteY + settleEase * (aboutShift.y - startAbsoluteY);
+
+        stage.style.position = "absolute";
+        stage.style.top = "50%";
+        stage.style.left = "50%";
+        stage.style.zIndex = "100";
       }
 
-      stage.style.setProperty("--flip-rotation", `${rotation}deg`);
-      stage.style.setProperty("--flip-shift", `${rotation > 0 ? (rotation / 180) * 18 : 0}px`);
-      stage.style.setProperty("--stage-shift", `${y}px`);
-      stage.style.setProperty("--stage-shift-x", `${x}px`);
-      stage.style.setProperty("--stage-scale", "1");
-      stage.style.setProperty("--stage-opacity", "1");
+      // Apply circle mode class for glow effect, and interpolate stage height to be a perfect square
+      // circleP is properly scoped (0 = card, 1 = full circle)
+      if (phase === "theater" || phase === "theater-exit") {
+        stage.classList.add("circle-mode");
+        // Natural card width & height
+        const naturalW = stage.offsetWidth || 300;
+        const naturalH = parseFloat(stage.dataset.naturalH || stage.offsetHeight) || 388;
+        // Store natural height once
+        if (!stage.dataset.naturalH) stage.dataset.naturalH = stage.offsetHeight;
+        // Smoothly squish height → width so border-radius 50% makes a perfect circle
+        const targetH = naturalW + (naturalH - naturalW) * (1 - circleP);
+        stage.style.height = `${targetH}px`;
+      } else {
+        stage.classList.remove("circle-mode");
+        stage.style.height = "";
+        delete stage.dataset.naturalH;
+      }
 
-      const textParallax = Math.min(Math.max(scroll / servicesTop, 0), 1) * 180;
-      scene.style.setProperty("--text-parallax", `${textParallax}px`);
+      // ── Hero → Theater blend: scroll-linked dark overlay fade + upward drift ──
+      const theaterTopVal = sectionBounds.theaterTop || window.innerHeight || 800;
+      // Overlay fades in during the last 60% of the hero scroll
+      const blendStart = theaterTopVal * 0.4;
+      const blendP = Math.min(Math.max((scroll - blendStart) / (theaterTopVal - blendStart), 0), 1);
+      const blendEase = blendP * blendP * (3 - 2 * blendP);
+
+      // Hero content parallax upward + fade - target only text elements to keep ancestors untransformed for card positioning
+      const textElements = document.querySelectorAll(".hero-top-left, .hero-letter, .hero-filler-layer");
+      const heroFade = Math.max(1 - blendEase * 1.4, 0);
+      textElements.forEach((el) => {
+        el.style.opacity = heroFade.toString();
+        el.style.transform = `translate3d(0, ${-blendEase * 60}px, 0)`;
+        el.style.willChange = "transform, opacity";
+      });
+
+      // Fade the red smoke background (ShaderBackground) to black directly as we scroll to the video
+      const shaderBg = document.querySelector(".hero-bg");
+      if (shaderBg) {
+        shaderBg.style.opacity = (1 - blendEase).toString();
+      }
+
+
+      // Apply transforms based on phase
+      if (isFixed) {
+        // Fixed positioning: use direct pixel coordinates
+        const stageW = stage.offsetWidth || 300;
+        const stageH = stage.offsetHeight || 380;
+        const transformX = currentFixedX - stageW / 2;
+        const transformY = currentFixedY - stageH / 2;
+        stage.style.transform = `translate3d(${transformX}px, ${transformY}px, 0) scale(${scale})`;
+        stage.style.setProperty("--flip-rotation", `${rotation}deg`);
+        stage.style.setProperty("--flip-shift", `${rotation > 0 ? (rotation / 180) * 18 : 0}px`);
+        stage.style.setProperty("--stage-scale", "1");
+        stage.style.setProperty("--stage-opacity", "1");
+        stage.style.setProperty("--card-border-radius", `${borderRadius}%`);
+      } else {
+        stage.style.setProperty("--flip-rotation", `${rotation}deg`);
+        stage.style.setProperty("--flip-shift", `${rotation > 0 ? (rotation / 180) * 18 : 0}px`);
+        stage.style.setProperty("--stage-shift", `${y}px`);
+        stage.style.setProperty("--stage-shift-x", `${x}px`);
+        stage.style.setProperty("--stage-scale", `${scale}`);
+        stage.style.setProperty("--stage-opacity", `${opacity}`);
+        stage.style.setProperty("--card-border-radius", `${borderRadius}%`);
+        stage.style.transform = `translate3d(calc(-50% + ${x}px), calc(-50% + ${y}px), 0) scale(${scale})`;
+      }
+
+      // Text parallax
+      const textParallaxP = Math.min(Math.max(scroll / (sectionBounds.theaterTop || window.innerHeight), 0), 1);
+      scene.style.setProperty("--text-parallax", `${textParallaxP * 180}px`);
+
+      lastPhase = phase;
     };
 
     let rafId = 0;
@@ -685,8 +900,12 @@ export default function Home() {
     return () => {
       lenis.destroy();
       clearTimeout(timer);
+      clearTimeout(timer2);
       window.removeEventListener("resize", handleResize);
+      window.removeEventListener("mousemove", handleMouseMove);
       if (rafId) window.cancelAnimationFrame(rafId);
+      const overlay = document.getElementById("hero-blend-overlay");
+      if (overlay) overlay.remove();
     };
   }, []);
 
@@ -749,87 +968,8 @@ export default function Home() {
           </section>
         </div>
 
-        <section className="services" id="services" aria-labelledby="services-title" ref={servicesSectionRef}>
-          <motion.div style={{ opacity: servicesOpacity, position: "absolute", top: 0, left: 0, right: 0, bottom: 0, zIndex: -1 }}><GradientBackground /></motion.div>
-          <motion.div style={{ opacity: servicesOpacity }}>
-            <div className="services-content-wrapper">
-              <ScrollReveal variant="wipe">
-                <div className="section-intro">
-                  <h2 id="services-title">what I can do for you</h2>
-                  <p>
-                    As a digital designer, I am a visual storyteller, crafting experiences that connect deeply
-                    and spark creativity.
-                  </p>
-                </div>
-              </ScrollReveal>
-              <ScrollReveal delay={200} variant="fluid-flow">
-                <Accordion items={services} />
-              </ScrollReveal>
-            </div>
-          </motion.div>
-          <div className="services-card-landing" aria-hidden="true"></div>
-        </section>
-
-        <section className="about" id="about" aria-labelledby="about-title">
-          <div className="about-content-wrapper">
-            <ScrollReveal variant="wipe">
-              <div className="section-intro">
-                <p className="eyebrow">Who am I?</p>
-                <h2 id="about-title">About me</h2>
-                <p>
-                  I am a digital designer and Framer developer passionate about crafting <span className="hand-text">unforgettable</span>,
-                  user-centered experiences.
-                </p>
-                <p>
-                  With a strong foundation in visual design and a deep understanding of interactive systems,
-                  I bring ideas to life through thoughtful design, chaotic-yet-organized layouts, and expressive typography.
-                </p>
-              </div>
-            </ScrollReveal>
-            <div className="about-panel">
-              <ScrollReveal delay={150} variant="fluid-flow">
-                <div className="stats-grid">
-                  <article>
-                    <strong>12</strong>
-                    <span>Years of experience</span>
-                  </article>
-                  <article>
-                    <strong>270</strong>
-                    <span>Completed projects</span>
-                  </article>
-                  <article>
-                    <strong>50+</strong>
-                    <span>Clients worldwide</span>
-                  </article>
-                </div>
-              </ScrollReveal>
-              <ScrollReveal delay={300} variant="glitch">
-                <div className="experience-list">
-                  <h3>Discover my journey in design</h3>
-                  <div className="timeline-row">
-                    <span>2023 - Present</span>
-                    <strong>Creative Art Director</strong>
-                    <small>NovaWorks Agency</small>
-                  </div>
-                  <div className="timeline-row">
-                    <span>2020 - 2023</span>
-                    <strong>Senior UI/UX Designer</strong>
-                    <small>BrightLabs Digital</small>
-                  </div>
-                  <div className="timeline-row">
-                    <span>2017 - 2020</span>
-                    <strong>Digital Designer</strong>
-                    <small>Independent Studio</small>
-                  </div>
-                </div>
-              </ScrollReveal>
-            </div>
-          </div>
-          <div className="about-card-landing"></div>
-        </section>
-
         {/* Cinematic Theater Section with Scroll Snapping / Pinning */}
-        <section className="theater-track" ref={theaterRef}>
+        <section className="theater-track" ref={(el) => { theaterRef.current = el; theaterSectionRef.current = el; }}>
           <div className="theater-sticky">
             <div className="theater-grain" />
             <div className="theater-light-beam" />
@@ -941,6 +1081,85 @@ export default function Home() {
               </div>
             </div>
           </div>
+        </section>
+
+        <section className="services" id="services" aria-labelledby="services-title" ref={servicesSectionRef}>
+          <motion.div style={{ opacity: servicesOpacity, position: "absolute", top: 0, left: 0, right: 0, bottom: 0, zIndex: -1 }}><GradientBackground /></motion.div>
+          <motion.div style={{ opacity: servicesOpacity }}>
+            <div className="services-content-wrapper">
+              <ScrollReveal variant="wipe">
+                <div className="section-intro">
+                  <h2 id="services-title">what I can do for you</h2>
+                  <p>
+                    As a digital designer, I am a visual storyteller, crafting experiences that connect deeply
+                    and spark creativity.
+                  </p>
+                </div>
+              </ScrollReveal>
+              <ScrollReveal delay={200} variant="fluid-flow">
+                <Accordion items={services} />
+              </ScrollReveal>
+            </div>
+          </motion.div>
+          <div className="services-card-landing" aria-hidden="true"></div>
+        </section>
+
+        <section className="about" id="about" aria-labelledby="about-title">
+          <div className="about-content-wrapper">
+            <ScrollReveal variant="wipe">
+              <div className="section-intro">
+                <p className="eyebrow">Who am I?</p>
+                <h2 id="about-title">About me</h2>
+                <p>
+                  I am a digital designer and Framer developer passionate about crafting <span className="hand-text">unforgettable</span>,
+                  user-centered experiences.
+                </p>
+                <p>
+                  With a strong foundation in visual design and a deep understanding of interactive systems,
+                  I bring ideas to life through thoughtful design, chaotic-yet-organized layouts, and expressive typography.
+                </p>
+              </div>
+            </ScrollReveal>
+            <div className="about-panel">
+              <ScrollReveal delay={150} variant="fluid-flow">
+                <div className="stats-grid">
+                  <article>
+                    <strong>12</strong>
+                    <span>Years of experience</span>
+                  </article>
+                  <article>
+                    <strong>270</strong>
+                    <span>Completed projects</span>
+                  </article>
+                  <article>
+                    <strong>50+</strong>
+                    <span>Clients worldwide</span>
+                  </article>
+                </div>
+              </ScrollReveal>
+              <ScrollReveal delay={300} variant="glitch">
+                <div className="experience-list">
+                  <h3>Discover my journey in design</h3>
+                  <div className="timeline-row">
+                    <span>2023 - Present</span>
+                    <strong>Creative Art Director</strong>
+                    <small>NovaWorks Agency</small>
+                  </div>
+                  <div className="timeline-row">
+                    <span>2020 - 2023</span>
+                    <strong>Senior UI/UX Designer</strong>
+                    <small>BrightLabs Digital</small>
+                  </div>
+                  <div className="timeline-row">
+                    <span>2017 - 2020</span>
+                    <strong>Digital Designer</strong>
+                    <small>Independent Studio</small>
+                  </div>
+                </div>
+              </ScrollReveal>
+            </div>
+          </div>
+          <div className="about-card-landing"></div>
         </section>
 
         <section className="projects" id="projects" aria-labelledby="projects-title">
