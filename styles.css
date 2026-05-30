@@ -676,6 +676,21 @@ section {
   will-change: transform;
 }
 
+.portrait-stage.is-locked {
+  animation: cardLockSnap 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes cardLockSnap {
+  0% {
+    filter: brightness(1.2) contrast(1.1);
+    box-shadow: 0 0 70px rgba(255, 255, 255, 0.45);
+  }
+  100% {
+    filter: brightness(1) contrast(1);
+    box-shadow: var(--shadow);
+  }
+}
+
 .portrait-card {
   position: absolute;
   inset: 0;
@@ -805,11 +820,107 @@ section {
 
 .services-card-landing {
   position: absolute;
-  top: 50vh;
-  left: 50%;
+  top: 50%;
+  right: 12%;
   z-index: 30;
   pointer-events: none;
-  transform: translate(-50%, -50%);
+  transform: translateY(-50%);
+}
+
+.services-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: 100vh;
+  padding: 0 8%;
+  position: relative;
+}
+
+.services-content-wrapper-ref {
+  max-width: 60%;
+  z-index: 10;
+}
+
+.ref-quote-container {
+  margin-bottom: 60px;
+}
+
+.ref-quote {
+  font-family: var(--font-main);
+  font-weight: 900;
+  font-size: clamp(32px, 4.5vw, 64px);
+  line-height: 1.1;
+  text-transform: uppercase;
+  color: #fff;
+  letter-spacing: -0.03em;
+}
+
+.ref-quote .dim-text {
+  color: #333;
+}
+
+.ref-signature-container {
+  margin-top: 40px;
+}
+
+.ref-signature {
+  font-family: var(--hand);
+  font-size: clamp(32px, 4vw, 56px);
+  color: var(--lime);
+  transform: rotate(-3deg);
+}
+
+/* Card labels from reference */
+.card-label {
+  position: absolute;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  pointer-events: none;
+  z-index: 100;
+}
+
+.card-label-top {
+  top: 65%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--lime);
+  color: #000;
+  padding: 4px 12px;
+  font-family: var(--font-accent);
+  font-weight: 700;
+  font-size: 14px;
+  text-transform: uppercase;
+  border-radius: 2px;
+}
+
+.card-label-bottom {
+  bottom: 10%;
+  left: 0;
+  right: 0;
+  text-align: center;
+  color: #fff;
+}
+
+.label-name {
+  font-family: var(--font-main);
+  font-weight: 900;
+  font-size: 24px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.label-role {
+  font-size: 12px;
+  opacity: 0.7;
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+
+/* Show labels when in services phase or about phase */
+.portrait-stage[data-phase="services"] .card-label,
+.portrait-stage[data-phase="about"] .card-label {
+  opacity: 1;
 }
 
 .about-content-wrapper {
@@ -819,20 +930,6 @@ section {
 }
 
 .services-content-wrapper {
-  display: grid;
-  gap: 40px;
-  max-width: min(40vw, 520px);
-  opacity: 0.34;
-}
-
-.services .section-intro {
-  display: grid;
-  gap: 40px;
-  width: 600px;
-  max-width: 100%;
-}
-
-.services .section-intro h2 {
   font-size: clamp(5.5rem, 9vw, 9.75rem);
   line-height: 1;
   max-width: 500px;
@@ -1824,6 +1921,52 @@ section {
   height: 100%;
   object-fit: cover;
   display: block;
+}
+
+/* Staggered V-shaped boxy cut at the top */
+.theater-grid-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  grid-template-rows: repeat(20, 1fr);
+  pointer-events: none;
+  z-index: 50;
+}
+
+.grid-box {
+  background-color: #000;
+  border-bottom: 0.5px solid rgba(255, 255, 255, 0.1);
+  border-right: 0.5px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Individual column heights to create a shallower V shape */
+.grid-box:nth-child(1)  { grid-row: 1 / 2; }
+.grid-box:nth-child(2)  { grid-row: 1 / 3; }
+.grid-box:nth-child(3)  { grid-row: 1 / 3; }
+.grid-box:nth-child(4)  { grid-row: 1 / 4; }
+.grid-box:nth-child(5)  { grid-row: 1 / 4; }
+.grid-box:nth-child(6)  { grid-row: 1 / 5; }
+.grid-box:nth-child(7)  { grid-row: 1 / 5; }
+.grid-box:nth-child(8)  { grid-row: 1 / 4; }
+.grid-box:nth-child(9)  { grid-row: 1 / 4; }
+.grid-box:nth-child(10) { grid-row: 1 / 3; }
+.grid-box:nth-child(11) { grid-row: 1 / 3; }
+.grid-box:nth-child(12) { grid-row: 1 / 2; }
+
+.theater-bottom-fade {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 350px;
+  background: linear-gradient(to top, #000 15%, transparent);
+  pointer-events: none;
+  z-index: 60;
+  opacity: 0.9;
 }
 
 /* Yellow hazard stripe on the top right */

@@ -5,7 +5,6 @@ import Lenis from "lenis";
 import { motion, useScroll, useTransform } from "framer-motion";
 import anime from "animejs";
 import ShaderBackground from "../components/ShaderBackground";
-import GradientBackground from "../components/GradientBackground";
 
 const services = [
   {
@@ -499,10 +498,12 @@ export default function Home() {
     offset: ["start start", "end end"]
   });
 
-  const theaterScale = useTransform(theaterProgress, [0, 0.7, 1], [0.72, 1.05, 1.05]);
-  const theaterWidth = useTransform(theaterProgress, [0, 0.7], ["min(calc(100% - 40px), 1100px)", "100%"]);
-  const theaterBorderRadius = useTransform(theaterProgress, [0, 0.6], ["24px", "0px"]);
-  const theaterBorderWidth = useTransform(theaterProgress, [0, 0.6], ["4px", "0px"]);
+  // Full screen by default
+  const theaterScale = 1;
+  const theaterWidth = "100%";
+  const theaterBorderRadius = "0px";
+  const theaterBorderWidth = "0px";
+  
   const theaterGlowOpacity = useTransform(theaterProgress, [0, 0.4, 0.8], [0.35, 0.9, 0.1]);
   const hudOpacity = useTransform(theaterProgress, [0.35, 0.6], [1, 0]);
 
@@ -574,13 +575,16 @@ export default function Home() {
     // Smoothed cursor position for buttery following
     let smoothMouse = { x: mousePosRef.current.x, y: mousePosRef.current.y };
 
-    let sectionBounds = { heroBottom: 0, theaterTop: 0, theaterBottom: 0, aboutTop: 0, aboutBottom: 0 };
+    let sectionBounds = { heroBottom: 0, theaterTop: 0, theaterBottom: 0, servicesTop: 0, servicesBottom: 0, aboutTop: 0, aboutBottom: 0 };
     let baseCoords = { x: 0, y: 0 };
+    let servicesShift = { x: 0, y: 0 };
     let aboutShift = { x: 0, y: 0 };
 
     const updateCoords = () => {
       const stageEl = stage;
       const theaterEl = theaterSectionRef.current;
+      const servicesEl = servicesSectionRef.current;
+      const servicesLanding = document.querySelector(".services-card-landing");
       const aboutLanding = document.querySelector(".about-card-landing");
       const aboutSection = document.getElementById("about");
 
@@ -598,6 +602,13 @@ export default function Home() {
         sectionBounds.theaterBottom = tRect.bottom + window.scrollY;
       }
 
+      // Get services section bounds
+      if (servicesEl) {
+        const sRect = servicesEl.getBoundingClientRect();
+        sectionBounds.servicesTop = sRect.top + window.scrollY;
+        sectionBounds.servicesBottom = sRect.bottom + window.scrollY;
+      }
+
       // Get about section bounds
       if (aboutSection) {
         const aRect = aboutSection.getBoundingClientRect();
@@ -613,6 +624,15 @@ export default function Home() {
 
       baseCoords.x = stageRect.left + window.scrollX + stageRect.width / 2;
       baseCoords.y = stageRect.top + window.scrollY + stageRect.height / 2;
+
+      // Compute services-card-landing shift
+      if (servicesLanding) {
+        const rect = servicesLanding.getBoundingClientRect();
+        const landingPageX = rect.left + window.scrollX + rect.width / 2;
+        const landingPageY = rect.top + window.scrollY + rect.height / 2;
+        servicesShift.x = landingPageX - baseCoords.x;
+        servicesShift.y = landingPageY - baseCoords.y;
+      }
 
       // Compute about-card-landing shift
       if (aboutLanding) {
@@ -637,6 +657,8 @@ export default function Home() {
     let currentFixedX = 0;
     let currentFixedY = 0;
     let lastPhase = "hero";
+    let snapStartMouse = { x: 0, y: 0 };
+    let lockImpactTime = 0;
 
     const updateHeroMotion = (scroll) => {
       if (window.innerWidth <= 768) {
@@ -655,15 +677,22 @@ export default function Home() {
         return;
       }
 
-      const { heroBottom, theaterTop, theaterBottom, aboutTop } = sectionBounds;
+      const { heroBottom, theaterTop: theaterTopBound, theaterBottom: theaterBottomBound, servicesBottom, aboutTop } = sectionBounds;
 
       // Define transition zones
-      const heroFlipEnd = theaterTop; // Card flips as user scrolls through hero
+      const theaterTop = theaterTopBound || 0;
+      const theaterBottom = theaterBottomBound || 0;
       const theaterMorphStart = theaterTop; // Circle morph begins
-      const theaterMorphEnd = theaterTop + 300; // Circle morph completes (300px into theater)
-      const theaterExitStart = theaterBottom - 400; // Begin unmorph
-      const theaterExitEnd = theaterBottom; // Fully unmorphed, begin about transition
-      const aboutSettleEnd = aboutTop + 600; // Card settles into about landing
+      
+      // SHIFTED: Start snapping much earlier so it's fully locked before the section transition is complete
+      const theaterExitStart = theaterBottom - 500; 
+      const theaterExitEnd = theaterBottom - 50; 
+      
+      const servicesSettleEnd = theaterExitEnd; 
+      
+      const servicesBottomVal = servicesBottom || (theaterBottom + 1000);
+      const servicesExitStart = servicesBottomVal - 300; // Begin move to about
+      const aboutSettleEnd = (aboutTop || (servicesBottomVal + 200)) + 600; // Card settles into about landing
 
       let x = 0;
       let y = 0;
@@ -722,9 +751,13 @@ export default function Home() {
           smoothMouse.x += (mousePosRef.current.x - smoothMouse.x) * lerpFactor;
           smoothMouse.y += (mousePosRef.current.y - smoothMouse.y) * lerpFactor;
 
-          // Card starts at center-top of viewport at morphStartZone
           const startViewportX = window.innerWidth / 2;
           const startViewportY = theaterTop - scroll;
+
+          // Smoothly update smoothMouse to the actual mouse position as we fly in
+          // This avoids the "jump" when moving from center-top to current mouse pos
+          smoothMouse.x += (mousePosRef.current.x - smoothMouse.x) * 0.08;
+          smoothMouse.y += (mousePosRef.current.y - smoothMouse.y) * 0.08;
 
           // Interpolate viewport relative position from startViewport to smoothMouse
           const targetViewportX = startViewportX + (smoothMouse.x - startViewportX) * morphEase;
@@ -735,6 +768,7 @@ export default function Home() {
           y = (targetViewportY + scroll) - baseCoords.y;
         }
 
+        stage.classList.remove("is-locked");
         stage.style.position = "absolute";
         stage.style.top = "50%";
         stage.style.left = "50%";
@@ -745,6 +779,7 @@ export default function Home() {
         phase = "theater";
         isFixed = true;
         rotation = 180;
+        stage.classList.remove("is-locked");
 
         // Morph is fully complete
         circleP = 1; // exposed to height interpolation
@@ -759,6 +794,10 @@ export default function Home() {
         // Glued to the cursor
         currentFixedX = smoothMouse.x;
         currentFixedY = smoothMouse.y;
+        
+        // Capture position for next phase snap
+        snapStartMouse.x = smoothMouse.x;
+        snapStartMouse.y = smoothMouse.y;
 
         stage.style.position = "fixed";
         stage.style.top = "0";
@@ -766,48 +805,79 @@ export default function Home() {
         stage.style.zIndex = "9999";
 
       } else if (scroll >= theaterExitStart && scroll < theaterExitEnd) {
-        // ===== PHASE 2.5: Theater exit (un-morph from circle back to card) =====
-        phase = "theater-exit";
+        // ===== PHASE 3: Entering Services (Snap & Lock) =====
+        phase = "services-snap";
         isFixed = true;
         rotation = 180;
 
-        const rawExitP = Math.min(Math.max((scroll - theaterExitStart) / (theaterExitEnd - theaterExitStart), 0), 1);
-        const exitEase = rawExitP * rawExitP * (3 - 2 * rawExitP);
-        circleP = 1 - exitEase; // exposed to height interpolation
+        const snapP = Math.min(Math.max((scroll - theaterExitStart) / (theaterExitEnd - theaterExitStart), 0), 1);
+        const snapEase = snapP * snapP * (3 - 2 * snapP);
 
-        borderRadius = 50 * (1 - exitEase);
-        scale = 0.3 + exitEase * 0.7; // Scale back up to 1
+        circleP = 1 - snapEase;
+        borderRadius = 50 * (1 - snapEase);
+        scale = 0.3 + snapEase * 0.7;
 
-        // Move from cursor position toward center bottom of viewport
-        smoothMouse.x += (mousePosRef.current.x - smoothMouse.x) * 0.12;
-        smoothMouse.y += (mousePosRef.current.y - smoothMouse.y) * 0.12;
+        // Target viewport position for the landing spot
+        const landingViewportX = (baseCoords.x + servicesShift.x);
+        
+        // FIX: The calculation must ensure the landing position is absolute on the screen 
+        // while the user is still scrolling in the section above.
+        const landingViewportY = (baseCoords.y + servicesShift.y) - scroll;
 
-        const viewCenterX = window.innerWidth / 2;
-        const viewCenterY = window.innerHeight / 2;
+        // Smoothly move from captured snapStartMouse (last cursor pos) to landing spot
+        currentFixedX = snapStartMouse.x + (landingViewportX - snapStartMouse.x) * snapEase;
+        currentFixedY = snapStartMouse.y + (landingViewportY - snapStartMouse.y) * snapEase;
 
-        currentFixedX = smoothMouse.x + (viewCenterX - smoothMouse.x) * exitEase;
-        currentFixedY = smoothMouse.y + (viewCenterY - smoothMouse.y) * exitEase;
+        // Clamp to the landing spot near the end to avoid any extra drift
+        if (snapP > 0.85) {
+          currentFixedX = landingViewportX;
+          currentFixedY = landingViewportY;
+        }
+
+        // Force scale to return from 0.3 to 1.0 (or appropriate size)
+        scale = 0.3 + snapEase * 0.7;
+
+        if (snapP > 0.95) {
+          if (!stage.classList.contains("is-locked")) {
+            lockImpactTime = Date.now();
+          }
+          stage.classList.add("is-locked");
+        } else {
+          stage.classList.remove("is-locked");
+        }
 
         stage.style.position = "fixed";
         stage.style.top = "0";
         stage.style.left = "0";
         stage.style.zIndex = "9999";
 
+      } else if (scroll < servicesExitStart) {
+        // ===== PHASE 3.5: Services section (Locked in place) =====
+        phase = "services";
+        rotation = 180;
+        borderRadius = 0;
+        stage.classList.add("is-locked");
+
+        x = servicesShift.x;
+        y = servicesShift.y;
+
+        stage.style.position = "absolute";
+        stage.style.top = "50%";
+        stage.style.left = "50%";
+        stage.style.zIndex = "100";
       } else {
-        // ===== PHASE 3: About section (card flies to about-card-landing) =====
+        // ===== PHASE 4: About section (card moves from services to about) =====
         phase = "about";
         rotation = 180;
         borderRadius = 0;
+        stage.classList.remove("is-locked");
 
-        const settleP = Math.min(Math.max((scroll - theaterExitEnd) / (aboutSettleEnd - theaterExitEnd), 0), 1);
+        const settleP = Math.min(Math.max((scroll - servicesExitStart) / (aboutSettleEnd - servicesExitStart), 0), 1);
         const settleEase = settleP * settleP * (3 - 2 * settleP);
 
-        // Interpolate smoothly from viewport center to the absolute About landing position to eliminate jumps
-        const startAbsoluteX = (window.innerWidth / 2) - baseCoords.x;
-        const startAbsoluteY = (theaterExitEnd + window.innerHeight / 2) - baseCoords.y;
-
-        x = startAbsoluteX + settleEase * (aboutShift.x - startAbsoluteX);
-        y = startAbsoluteY + settleEase * (aboutShift.y - startAbsoluteY);
+        // Interpolate smoothly from Services position to About landing position
+        x = servicesShift.x + settleEase * (aboutShift.x - servicesShift.x);
+        y = servicesShift.y + settleEase * (aboutShift.y - servicesShift.y);
 
         stage.style.position = "absolute";
         stage.style.top = "50%";
@@ -877,12 +947,15 @@ export default function Home() {
         stage.style.setProperty("--stage-scale", `${scale}`);
         stage.style.setProperty("--stage-opacity", `${opacity}`);
         stage.style.setProperty("--card-border-radius", `${borderRadius}%`);
+
         stage.style.transform = `translate3d(calc(-50% + ${x}px), calc(-50% + ${y}px), 0) scale(${scale})`;
       }
 
       // Text parallax
       const textParallaxP = Math.min(Math.max(scroll / (sectionBounds.theaterTop || window.innerHeight), 0), 1);
       scene.style.setProperty("--text-parallax", `${textParallaxP * 180}px`);
+
+      stage.dataset.phase = phase; 
 
       lastPhase = phase;
     };
@@ -950,6 +1023,12 @@ export default function Home() {
                         src="/images/IMG_5775.PNG"
                         alt="Portrait of designer Rahul"
                       />
+                      {/* Reference labels that appear in 3rd section */}
+                      <div className="card-label card-label-top">SINCE — 2024</div>
+                      <div className="card-label card-label-bottom">
+                        <div className="label-name">RAHUL®</div>
+                        <div className="label-role">Digital Designer & Art Director</div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -996,6 +1075,16 @@ export default function Home() {
                   borderWidth: theaterBorderWidth 
                 }}
               >
+                {/* Boxy grid overlay at the top */}
+                <div className="theater-grid-overlay">
+                  {Array.from({ length: 12 }).map((_, i) => (
+                    <div key={i} className="grid-box" />
+                  ))}
+                </div>
+
+                {/* Subtle bottom fade */}
+                <div className="theater-bottom-fade" />
+
                 {/* Yellow caution stripe on the top right */}
                 <motion.div 
                   className="caution-strip"
@@ -1076,32 +1165,33 @@ export default function Home() {
               >
                 {isMuted ? "🔇 UNMUTE AUDIO" : "🔊 MUTE AUDIO"}
               </button>
-              <div className="scroll-tip">
-                Scroll to Zoom
-              </div>
             </div>
           </div>
         </section>
 
         <section className="services" id="services" aria-labelledby="services-title" ref={servicesSectionRef}>
-          <motion.div style={{ opacity: servicesOpacity, position: "absolute", top: 0, left: 0, right: 0, bottom: 0, zIndex: -1 }}><GradientBackground /></motion.div>
-          <motion.div style={{ opacity: servicesOpacity }}>
-            <div className="services-content-wrapper">
+          <motion.div style={{ opacity: servicesOpacity, position: "absolute", top: 0, left: 0, right: 0, bottom: 0, zIndex: -1, backgroundColor: "#000" }}></motion.div>
+          <motion.div style={{ opacity: servicesOpacity }} className="services-container">
+            <div className="services-content-wrapper-ref">
               <ScrollReveal variant="wipe">
-                <div className="section-intro">
-                  <h2 id="services-title">what I can do for you</h2>
-                  <p>
-                    As a digital designer, I am a visual storyteller, crafting experiences that connect deeply
-                    and spark creativity.
-                  </p>
+                <div className="ref-quote-container">
+                  <h2 className="ref-quote">
+                    WE BELIEVE GREAT DESIGN ALWAYS BEGINS WITH UNDERSTANDING THE GOALS AND USERS BEHIND EVERY PROJECT TO CREATE MEANINGFUL AND EFFECTIVE <span className="dim-text">DIGITAL EXPERIENCES.</span>
+                  </h2>
                 </div>
               </ScrollReveal>
-              <ScrollReveal delay={200} variant="fluid-flow">
-                <Accordion items={services} />
+              
+              <ScrollReveal delay={400} variant="fluid-flow">
+                <div className="ref-signature-container">
+                  <div className="ref-signature">Rahul Portfolio</div>
+                </div>
               </ScrollReveal>
             </div>
+
+            <div className="services-card-landing" aria-hidden="true">
+              {/* This is the spot where the flying card will land */}
+            </div>
           </motion.div>
-          <div className="services-card-landing" aria-hidden="true"></div>
         </section>
 
         <section className="about" id="about" aria-labelledby="about-title">
