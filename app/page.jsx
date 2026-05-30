@@ -487,6 +487,17 @@ export default function Home() {
   });
   const servicesOpacity = useTransform(servicesProgress, [0, 0.4, 1], [0, 0, 1]);
 
+  // Film reel section scroll-driven unroll
+  const filmReelRef = useRef(null);
+  const { scrollYProgress: filmReelProgress } = useScroll({
+    target: filmReelRef,
+    offset: ["start start", "end end"]
+  });
+  // The film strip starts fully hidden inside the canister (translated left) and moves right as you scroll
+  const filmStripX = useTransform(filmReelProgress, [0, 1], ["-100%", "0%"]);
+  // Canister subtle rotation driven by scroll
+  const canisterRotate = useTransform(filmReelProgress, [0, 1], [0, 720]);
+
   // Theater section references and scroll transforms
   const theaterRef = useRef(null);
   const videoRef = useRef(null);
@@ -925,6 +936,16 @@ export default function Home() {
         shaderBg.style.opacity = (1 - blendEase).toString();
       }
 
+      // Boxy grid interactive scroll transition classes
+      const overlayEl = document.querySelector(".theater-grid-overlay");
+      if (overlayEl) {
+        // State 1: Once we reach the video section, all rectangles flatten into a uniform layout
+        overlayEl.classList.toggle("video-reached", scroll >= theaterTopVal);
+        
+        // State 2: As we scroll further into the video (250px travel distance), they collapse completely out of view
+        overlayEl.classList.toggle("video-fully-active", scroll >= theaterTopVal + 250);
+      }
+
 
       // Apply transforms based on phase
       if (isFixed) {
@@ -1250,6 +1271,58 @@ export default function Home() {
             </div>
           </div>
           <div className="about-card-landing"></div>
+        </section>
+
+        {/* ═══════ Kodak Film Reel — Scroll-Pinned Unroll ═══════ */}
+        <section className="film-reel-section" ref={filmReelRef} aria-label="Film reel gallery">
+          <div className="film-reel-sticky">
+            {/* Kodak canister fixed on the left */}
+            <div className="film-canister">
+              <img
+                src="/images/toppng.com-kodak-portra-400-35mm-film-film-kodak-portra-160-402x526.png"
+                alt="Kodak Portra 400 film canister"
+                className="canister-img"
+              />
+            </div>
+
+            {/* The viewport that clips the film strip */}
+            <div className="film-viewport">
+              <motion.div className="film-tape" style={{ x: filmStripX }}>
+                {/* Sprocket holes top edge — continuous */}
+                <div className="tape-sprockets tape-sprockets-top">
+                  {Array.from({ length: 42 }).map((_, i) => (
+                    <div className="sprocket-hole" key={`st-${i}`} />
+                  ))}
+                </div>
+
+                {/* Film frames */}
+                <div className="tape-frames">
+                  {[6, 5, 4, 3, 2, 1].map((n) => (
+                    <div className="tape-frame" key={n}>
+                      <img src={`/images/reel/reel-${n}.png`} alt={`Film frame ${n}`} loading="lazy" />
+                      <span className="tape-frame-num">{n}A</span>
+                      <span className="tape-frame-code">KODAK 5207</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Sprocket holes bottom edge — continuous */}
+                <div className="tape-sprockets tape-sprockets-bottom">
+                  {Array.from({ length: 42 }).map((_, i) => (
+                    <div className="sprocket-hole" key={`sb-${i}`} />
+                  ))}
+                </div>
+
+                {/* Edge text along the film strip */}
+                <div className="tape-edge-text tape-edge-top">
+                  KODAK 5207 &nbsp; VISION3 250D &nbsp; COLOR NEGATIVE FILM &nbsp; KODAK 5207 &nbsp; VISION3 250D &nbsp; COLOR NEGATIVE FILM &nbsp; KODAK 5207
+                </div>
+                <div className="tape-edge-text tape-edge-bottom">
+                  EASTMAN &nbsp; PROCESSED BY RAHUL® &nbsp; 5207 219 &nbsp; EASTMAN &nbsp; PROCESSED BY RAHUL® &nbsp; 5207 219 &nbsp; EASTMAN
+                </div>
+              </motion.div>
+            </div>
+          </div>
         </section>
 
         <section className="projects" id="projects" aria-labelledby="projects-title">
