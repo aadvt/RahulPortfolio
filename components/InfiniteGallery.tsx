@@ -357,9 +357,10 @@ function GalleryScene({
 			}
 		}
 
-		// Apply auto-play
+		// Apply auto-play (respecting speed direction)
 		if (autoPlay) {
-			setScrollVelocity((prev) => prev + 0.3 * delta);
+			const direction = speed < 0 ? -1 : 1;
+			setScrollVelocity((prev) => prev + direction * 0.3 * delta);
 		}
 
 		// Damping
@@ -547,6 +548,8 @@ function FallbackGallery({ images }: { images: ImageItem[] }) {
 
 export default function InfiniteGallery({
 	images,
+	speed = 1,
+	visibleCount = 8,
 	className = 'h-96 w-full',
 	style,
 	fadeSettings = {
@@ -591,6 +594,8 @@ export default function InfiniteGallery({
 			>
 				<GalleryScene
 					images={images}
+					speed={speed}
+					visibleCount={visibleCount}
 					fadeSettings={fadeSettings}
 					blurSettings={blurSettings}
 				/>

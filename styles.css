@@ -818,15 +818,6 @@ section {
   display: block;
 }
 
-.services-card-landing {
-  position: absolute;
-  top: 50%;
-  right: 12%;
-  z-index: 30;
-  pointer-events: none;
-  transform: translateY(-50%);
-}
-
 .services-container {
   display: flex;
   align-items: center;
@@ -2392,6 +2383,23 @@ section {
   position: sticky;
   top: 0;
   overflow: hidden;
+}
+
+.infinite-gallery-container .about-card-landing {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.services-gallery .services-card-landing {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 10;
 }
 
 .infinite-gallery-canvas {

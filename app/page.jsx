@@ -482,11 +482,6 @@ export default function Home() {
 
   // Services section reference
   const servicesSectionRef = useRef(null);
-  const { scrollYProgress: servicesProgress } = useScroll({
-    target: servicesSectionRef,
-    offset: ["start 50%", "start 10%"]
-  });
-  const servicesOpacity = useTransform(servicesProgress, [0, 0.4, 1], [0, 0, 1]);
 
   // Film reel section scroll-driven unroll
   const filmReelRef = useRef(null);
@@ -587,18 +582,15 @@ export default function Home() {
     // Smoothed cursor position for buttery following
     let smoothMouse = { x: mousePosRef.current.x, y: mousePosRef.current.y };
 
-    let sectionBounds = { heroBottom: 0, theaterTop: 0, theaterBottom: 0, servicesTop: 0, servicesBottom: 0, aboutTop: 0, aboutBottom: 0 };
+    let sectionBounds = { heroBottom: 0, theaterTop: 0, theaterBottom: 0, servicesTop: 0, servicesBottom: 0 };
     let baseCoords = { x: 0, y: 0 };
     let servicesShift = { x: 0, y: 0 };
-    let aboutShift = { x: 0, y: 0 };
 
     const updateCoords = () => {
       const stageEl = stage;
       const theaterEl = theaterSectionRef.current;
       const servicesEl = servicesSectionRef.current;
       const servicesLanding = document.querySelector(".services-card-landing");
-      const aboutLanding = document.querySelector(".about-card-landing");
-      const aboutSection = document.getElementById("about");
 
       if (!stageEl) return;
 
@@ -621,13 +613,6 @@ export default function Home() {
         sectionBounds.servicesBottom = sRect.bottom + window.scrollY;
       }
 
-      // Get about section bounds
-      if (aboutSection) {
-        const aRect = aboutSection.getBoundingClientRect();
-        sectionBounds.aboutTop = aRect.top + window.scrollY;
-        sectionBounds.aboutBottom = aRect.bottom + window.scrollY;
-      }
-
       // Compute base position (card's natural resting spot)
       const originalTransform = stageEl.style.transform;
       stageEl.style.transform = "none";
@@ -646,14 +631,6 @@ export default function Home() {
         servicesShift.y = landingPageY - baseCoords.y;
       }
 
-      // Compute about-card-landing shift
-      if (aboutLanding) {
-        const rect = aboutLanding.getBoundingClientRect();
-        const landingPageX = rect.left + window.scrollX + rect.width / 2;
-        const landingPageY = rect.top + window.scrollY + rect.height / 2;
-        aboutShift.x = landingPageX - baseCoords.x;
-        aboutShift.y = landingPageY - baseCoords.y;
-      }
     };
 
     updateCoords();
@@ -689,7 +666,7 @@ export default function Home() {
         return;
       }
 
-      const { heroBottom, theaterTop: theaterTopBound, theaterBottom: theaterBottomBound, servicesBottom, aboutTop } = sectionBounds;
+      const { heroBottom, theaterTop: theaterTopBound, theaterBottom: theaterBottomBound, servicesBottom } = sectionBounds;
 
       // Define transition zones
       const theaterTop = theaterTopBound || 0;
@@ -703,8 +680,8 @@ export default function Home() {
       const servicesSettleEnd = theaterExitEnd; 
       
       const servicesBottomVal = servicesBottom || (theaterBottom + 1000);
-      const servicesExitStart = servicesBottomVal - 300; // Begin move to about
-      const aboutSettleEnd = (aboutTop || (servicesBottomVal + 200)) + 600; // Card settles into about landing
+      const servicesExitStart = servicesBottomVal - 260;
+      const servicesDisappearEnd = servicesBottomVal + 280;
 
       let x = 0;
       let y = 0;
@@ -878,18 +855,20 @@ export default function Home() {
         stage.style.left = "50%";
         stage.style.zIndex = "100";
       } else {
-        // ===== PHASE 4: About section (card moves from services to about) =====
-        phase = "about";
+        // ===== PHASE 4: Services vanish into gallery =====
+        phase = "services";
         rotation = 180;
         borderRadius = 0;
         stage.classList.remove("is-locked");
 
-        const settleP = Math.min(Math.max((scroll - servicesExitStart) / (aboutSettleEnd - servicesExitStart), 0), 1);
-        const settleEase = settleP * settleP * (3 - 2 * settleP);
+        x = servicesShift.x;
+        y = servicesShift.y;
 
-        // Interpolate smoothly from Services position to About landing position
-        x = servicesShift.x + settleEase * (aboutShift.x - servicesShift.x);
-        y = servicesShift.y + settleEase * (aboutShift.y - servicesShift.y);
+        const vanishP = Math.min(Math.max((scroll - servicesExitStart) / (servicesDisappearEnd - servicesExitStart), 0), 1);
+        const vanishEase = vanishP * vanishP * (3 - 2 * vanishP);
+        scale = 1 - vanishEase * 0.85;
+        opacity = 1 - vanishEase;
+        y += vanishEase * 140;
 
         stage.style.position = "absolute";
         stage.style.top = "50%";
@@ -959,7 +938,7 @@ export default function Home() {
         stage.style.setProperty("--flip-rotation", `${rotation}deg`);
         stage.style.setProperty("--flip-shift", `${rotation > 0 ? (rotation / 180) * 18 : 0}px`);
         stage.style.setProperty("--stage-scale", "1");
-        stage.style.setProperty("--stage-opacity", "1");
+        stage.style.setProperty("--stage-opacity", `${opacity}`);
         stage.style.setProperty("--card-border-radius", `${borderRadius}%`);
       } else {
         stage.style.setProperty("--flip-rotation", `${rotation}deg`);
@@ -1191,87 +1170,37 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="services" id="services" aria-labelledby="services-title" ref={servicesSectionRef}>
-          <motion.div style={{ opacity: servicesOpacity, position: "absolute", top: 0, left: 0, right: 0, bottom: 0, zIndex: -1, backgroundColor: "#000" }}></motion.div>
-          <motion.div style={{ opacity: servicesOpacity }} className="services-container">
-            <div className="services-content-wrapper-ref">
-              <ScrollReveal variant="wipe">
-                <div className="ref-quote-container">
-                  <h2 className="ref-quote">
-                    WE BELIEVE GREAT DESIGN ALWAYS BEGINS WITH UNDERSTANDING THE GOALS AND USERS BEHIND EVERY PROJECT TO CREATE MEANINGFUL AND EFFECTIVE <span className="dim-text">DIGITAL EXPERIENCES.</span>
-                  </h2>
-                </div>
-              </ScrollReveal>
-              
-              <ScrollReveal delay={400} variant="fluid-flow">
-                <div className="ref-signature-container">
-                  <div className="ref-signature">Rahul Portfolio</div>
-                </div>
-              </ScrollReveal>
+        <section
+          className="infinite-gallery-section services-gallery"
+          id="services"
+          aria-label="Infinite gallery"
+          ref={servicesSectionRef}
+        >
+          <div className="infinite-gallery-container">
+            <InfiniteGallery
+              images={[
+                "/images/reel/reel-1.png",
+                "/images/reel/reel-2.png",
+                "/images/reel/reel-3.png",
+                "/images/reel/reel-4.png",
+                "/images/reel/reel-5.png",
+                "/images/reel/reel-6.png",
+                "/images/IMG_5775.PNG",
+                "/images/IMG_6471.jpg"
+              ]}
+              speed={1.2}
+              zSpacing={3}
+              visibleCount={12}
+              falloff={{ near: 0.8, far: 14 }}
+              className="infinite-gallery-canvas"
+            />
+            <div className="gallery-overlay-text">
+              <h2 className="gallery-quote">
+                <span className="italic-text">Placeholder</span> statement goes here
+              </h2>
             </div>
-
-            <div className="services-card-landing" aria-hidden="true">
-              {/* This is the spot where the flying card will land */}
-            </div>
-          </motion.div>
-        </section>
-
-        <section className="about" id="about" aria-labelledby="about-title">
-          <div className="about-content-wrapper">
-            <ScrollReveal variant="wipe">
-              <div className="section-intro">
-                <p className="eyebrow">Who am I?</p>
-                <h2 id="about-title">About me</h2>
-                <p>
-                  I am a digital designer and Framer developer passionate about crafting <span className="hand-text">unforgettable</span>,
-                  user-centered experiences.
-                </p>
-                <p>
-                  With a strong foundation in visual design and a deep understanding of interactive systems,
-                  I bring ideas to life through thoughtful design, chaotic-yet-organized layouts, and expressive typography.
-                </p>
-              </div>
-            </ScrollReveal>
-            <div className="about-panel">
-              <ScrollReveal delay={150} variant="fluid-flow">
-                <div className="stats-grid">
-                  <article>
-                    <strong>12</strong>
-                    <span>Years of experience</span>
-                  </article>
-                  <article>
-                    <strong>270</strong>
-                    <span>Completed projects</span>
-                  </article>
-                  <article>
-                    <strong>50+</strong>
-                    <span>Clients worldwide</span>
-                  </article>
-                </div>
-              </ScrollReveal>
-              <ScrollReveal delay={300} variant="glitch">
-                <div className="experience-list">
-                  <h3>Discover my journey in design</h3>
-                  <div className="timeline-row">
-                    <span>2023 - Present</span>
-                    <strong>Creative Art Director</strong>
-                    <small>NovaWorks Agency</small>
-                  </div>
-                  <div className="timeline-row">
-                    <span>2020 - 2023</span>
-                    <strong>Senior UI/UX Designer</strong>
-                    <small>BrightLabs Digital</small>
-                  </div>
-                  <div className="timeline-row">
-                    <span>2017 - 2020</span>
-                    <strong>Digital Designer</strong>
-                    <small>Independent Studio</small>
-                  </div>
-                </div>
-              </ScrollReveal>
-            </div>
+            <div className="services-card-landing" aria-hidden="true" />
           </div>
-          <div className="about-card-landing"></div>
         </section>
 
         {/* ═══════ Kodak Film Reel — Scroll-Pinned Unroll ═══════ */}
@@ -1365,29 +1294,6 @@ export default function Home() {
                   </article>
                 </ScrollReveal>
               ))}
-            </div>
-          </div>
-        </section>
-
-        <section className="infinite-gallery-section" aria-label="Infinite image gallery">
-          <div className="infinite-gallery-container">
-            <InfiniteGallery 
-              images={[
-                "/images/reel/reel-1.png",
-                "/images/reel/reel-2.png",
-                "/images/reel/reel-3.png",
-                "/images/reel/reel-4.png",
-                "/images/reel/reel-5.png",
-                "/images/reel/reel-6.png",
-                "/images/IMG_5775.PNG",
-                "/images/IMG_6471.jpg"
-              ]}
-              className="infinite-gallery-canvas"
-            />
-            <div className="gallery-overlay-text">
-              <h2 className="gallery-quote">
-                <span className="italic-text">I create;</span> therefore I am
-              </h2>
             </div>
           </div>
         </section>
