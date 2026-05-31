@@ -811,11 +811,21 @@ section {
   overflow: visible;
 }
 
+.gallery-card-landing,
 .services-card-landing,
 .about-card-landing {
   width: clamp(92px, 21vw, 380px);
   height: clamp(130px, 21.4vw, 388px);
   display: block;
+}
+
+.gallery-card-landing {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  opacity: 0;
 }
 
 .services-card-landing {

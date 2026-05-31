@@ -221,7 +221,6 @@ function GalleryScene({
 	const [scrollVelocity, setScrollVelocity] = useState(0);
 	const [autoPlay, setAutoPlay] = useState(true);
 	const lastInteraction = useRef(Date.now());
-	const lastScrollY = useRef(typeof window !== 'undefined' ? window.scrollY : 0);
 
 	// Normalize images to objects
 	const normalizedImages = useMemo(
@@ -344,23 +343,9 @@ function GalleryScene({
 	}, []);
 
 	useFrame((state, delta) => {
-		if (typeof window !== 'undefined') {
-			const currentScrollY = window.scrollY;
-			const scrollDelta = currentScrollY - lastScrollY.current;
-			lastScrollY.current = currentScrollY;
-
-			if (Math.abs(scrollDelta) > 0) {
-				// Multiply by a factor to convert scroll pixels to gallery speed
-				setScrollVelocity((prev) => prev + scrollDelta * 0.05 * speed);
-				setAutoPlay(false);
-				lastInteraction.current = Date.now();
-			}
-		}
-
-		// Apply auto-play (respecting speed direction)
+		// Apply auto-play
 		if (autoPlay) {
-			const direction = speed < 0 ? -1 : 1;
-			setScrollVelocity((prev) => prev + direction * 0.3 * delta);
+			setScrollVelocity((prev) => prev + 0.3 * delta);
 		}
 
 		// Damping
@@ -548,8 +533,6 @@ function FallbackGallery({ images }: { images: ImageItem[] }) {
 
 export default function InfiniteGallery({
 	images,
-	speed = 1,
-	visibleCount = 8,
 	className = 'h-96 w-full',
 	style,
 	fadeSettings = {
@@ -594,8 +577,6 @@ export default function InfiniteGallery({
 			>
 				<GalleryScene
 					images={images}
-					speed={speed}
-					visibleCount={visibleCount}
 					fadeSettings={fadeSettings}
 					blurSettings={blurSettings}
 				/>

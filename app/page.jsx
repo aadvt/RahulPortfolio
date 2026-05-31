@@ -470,6 +470,8 @@ export default function Home() {
   const portraitStageRef = useRef(null);
   const projectsContainerRef = useRef(null);
   const theaterSectionRef = useRef(null);
+  const gallerySectionRef = useRef(null);
+  const galleryLandingRef = useRef(null);
   const mousePosRef = useRef({ x: 600, y: 400 });
   const { scrollYProgress } = useScroll({
     target: projectsContainerRef,
@@ -587,14 +589,17 @@ export default function Home() {
     // Smoothed cursor position for buttery following
     let smoothMouse = { x: mousePosRef.current.x, y: mousePosRef.current.y };
 
-    let sectionBounds = { heroBottom: 0, theaterTop: 0, theaterBottom: 0, servicesTop: 0, servicesBottom: 0, aboutTop: 0, aboutBottom: 0 };
+    let sectionBounds = { heroBottom: 0, theaterTop: 0, theaterBottom: 0, galleryTop: 0, galleryBottom: 0, aboutTop: 0, aboutBottom: 0, servicesTop: 0, servicesBottom: 0 };
     let baseCoords = { x: 0, y: 0 };
-    let servicesShift = { x: 0, y: 0 };
+    let galleryShift = { x: 0, y: 0 };
     let aboutShift = { x: 0, y: 0 };
+    let servicesShift = { x: 0, y: 0 };
 
     const updateCoords = () => {
       const stageEl = stage;
       const theaterEl = theaterSectionRef.current;
+      const galleryLanding = galleryLandingRef.current;
+      const gallerySection = gallerySectionRef.current;
       const servicesEl = servicesSectionRef.current;
       const servicesLanding = document.querySelector(".services-card-landing");
       const aboutLanding = document.querySelector(".about-card-landing");
@@ -612,6 +617,13 @@ export default function Home() {
         const tRect = theaterEl.getBoundingClientRect();
         sectionBounds.theaterTop = tRect.top + window.scrollY;
         sectionBounds.theaterBottom = tRect.bottom + window.scrollY;
+      }
+
+      // Get gallery section bounds
+      if (gallerySection) {
+        const gRect = gallerySection.getBoundingClientRect();
+        sectionBounds.galleryTop = gRect.top + window.scrollY;
+        sectionBounds.galleryBottom = gRect.bottom + window.scrollY;
       }
 
       // Get services section bounds
@@ -637,13 +649,13 @@ export default function Home() {
       baseCoords.x = stageRect.left + window.scrollX + stageRect.width / 2;
       baseCoords.y = stageRect.top + window.scrollY + stageRect.height / 2;
 
-      // Compute services-card-landing shift
-      if (servicesLanding) {
-        const rect = servicesLanding.getBoundingClientRect();
+      // Compute gallery-card-landing shift
+      if (galleryLanding) {
+        const rect = galleryLanding.getBoundingClientRect();
         const landingPageX = rect.left + window.scrollX + rect.width / 2;
         const landingPageY = rect.top + window.scrollY + rect.height / 2;
-        servicesShift.x = landingPageX - baseCoords.x;
-        servicesShift.y = landingPageY - baseCoords.y;
+        galleryShift.x = landingPageX - baseCoords.x;
+        galleryShift.y = landingPageY - baseCoords.y;
       }
 
       // Compute about-card-landing shift
@@ -653,6 +665,15 @@ export default function Home() {
         const landingPageY = rect.top + window.scrollY + rect.height / 2;
         aboutShift.x = landingPageX - baseCoords.x;
         aboutShift.y = landingPageY - baseCoords.y;
+      }
+
+      // Compute services-card-landing shift
+      if (servicesLanding) {
+        const rect = servicesLanding.getBoundingClientRect();
+        const landingPageX = rect.left + window.scrollX + rect.width / 2;
+        const landingPageY = rect.top + window.scrollY + rect.height / 2;
+        servicesShift.x = landingPageX - baseCoords.x;
+        servicesShift.y = landingPageY - baseCoords.y;
       }
     };
 
@@ -689,22 +710,30 @@ export default function Home() {
         return;
       }
 
-      const { heroBottom, theaterTop: theaterTopBound, theaterBottom: theaterBottomBound, servicesBottom, aboutTop } = sectionBounds;
+      const { 
+        theaterTop: theaterTopBound, 
+        theaterBottom: theaterBottomBound, 
+        galleryBottom, 
+        aboutTop,
+        servicesTop,
+        servicesBottom 
+      } = sectionBounds;
 
       // Define transition zones
       const theaterTop = theaterTopBound || 0;
       const theaterBottom = theaterBottomBound || 0;
-      const theaterMorphStart = theaterTop; // Circle morph begins
+      const theaterMorphStart = theaterTop; 
       
-      // SHIFTED: Start snapping much earlier so it's fully locked before the section transition is complete
+      const galleryBottomVal = galleryBottom || (theaterBottom + 2000);
+      
       const theaterExitStart = theaterBottom - 500; 
       const theaterExitEnd = theaterBottom - 50; 
       
-      const servicesSettleEnd = theaterExitEnd; 
-      
-      const servicesBottomVal = servicesBottom || (theaterBottom + 1000);
-      const servicesExitStart = servicesBottomVal - 300; // Begin move to about
-      const aboutSettleEnd = (aboutTop || (servicesBottomVal + 200)) + 600; // Card settles into about landing
+      const galleryZoomEnd = theaterBottom + 600; 
+      const aboutSettleEnd = (aboutTop || (galleryBottomVal + 200)) + 600;
+
+      const servicesSettleStart = (servicesTop || 0) - 200;
+      const servicesSettleEnd = (servicesTop || 0) + 400;
 
       let x = 0;
       let y = 0;
@@ -816,46 +845,41 @@ export default function Home() {
         stage.style.left = "0";
         stage.style.zIndex = "9999";
 
-      } else if (scroll >= theaterExitStart && scroll < theaterExitEnd) {
-        // ===== PHASE 3: Entering Services (Snap & Lock) =====
-        phase = "services-snap";
+      } else if (scroll >= theaterExitStart && scroll < galleryZoomEnd) {
+        // ===== PHASE 3: Entering Gallery (Snap & Abyss Zoom) =====
+        phase = "gallery-zoom";
         isFixed = true;
         rotation = 180;
 
         const snapP = Math.min(Math.max((scroll - theaterExitStart) / (theaterExitEnd - theaterExitStart), 0), 1);
         const snapEase = snapP * snapP * (3 - 2 * snapP);
 
-        circleP = 1 - snapEase;
-        borderRadius = 50 * (1 - snapEase);
-        scale = 0.3 + snapEase * 0.7;
+        const zoomP = Math.min(Math.max((scroll - theaterExitEnd) / (galleryZoomEnd - theaterExitEnd), 0), 1);
+        const zoomEase = zoomP * zoomP * (3 - 2 * zoomP);
 
-        // Target viewport position for the landing spot
-        const landingViewportX = (baseCoords.x + servicesShift.x);
-        
-        // FIX: The calculation must ensure the landing position is absolute on the screen 
-        // while the user is still scrolling in the section above.
-        const landingViewportY = (baseCoords.y + servicesShift.y) - scroll;
+        circleP = 1;
+        borderRadius = 50;
 
-        // Smoothly move from captured snapStartMouse (last cursor pos) to landing spot
-        currentFixedX = snapStartMouse.x + (landingViewportX - snapStartMouse.x) * snapEase;
-        currentFixedY = snapStartMouse.y + (landingViewportY - snapStartMouse.y) * snapEase;
+        const landingViewportX = (baseCoords.x + galleryShift.x);
+        const landingViewportY = (baseCoords.y + galleryShift.y) - scroll;
 
-        // Clamp to the landing spot near the end to avoid any extra drift
-        if (snapP > 0.85) {
-          currentFixedX = landingViewportX;
-          currentFixedY = landingViewportY;
-        }
+        const centerX = window.innerWidth / 2;
+        const centerY = window.innerHeight / 2;
 
-        // Force scale to return from 0.3 to 1.0 (or appropriate size)
-        scale = 0.3 + snapEase * 0.7;
+        let targetX = snapStartMouse.x + (landingViewportX - snapStartMouse.x) * snapEase;
+        let targetY = snapStartMouse.y + (landingViewportY - snapStartMouse.y) * snapEase;
 
-        if (snapP > 0.95) {
-          if (!stage.classList.contains("is-locked")) {
-            lockImpactTime = Date.now();
-          }
-          stage.classList.add("is-locked");
+        if (zoomP > 0) {
+          currentFixedX = targetX + (centerX - targetX) * zoomEase;
+          currentFixedY = targetY + (centerY - targetY) * zoomEase;
+          // Zoom AWAY from user (into the screen)
+          scale = 1.0 * (1 - zoomEase); 
+          opacity = 1 - zoomEase;
         } else {
-          stage.classList.remove("is-locked");
+          currentFixedX = targetX;
+          currentFixedY = targetY;
+          scale = 0.3 + snapEase * 0.7;
+          opacity = 1;
         }
 
         stage.style.position = "fixed";
@@ -863,33 +887,64 @@ export default function Home() {
         stage.style.left = "0";
         stage.style.zIndex = "9999";
 
-      } else if (scroll < servicesExitStart) {
-        // ===== PHASE 3.5: Services section (Locked in place) =====
-        phase = "services";
-        rotation = 180;
-        borderRadius = 0;
-        stage.classList.add("is-locked");
-
-        x = servicesShift.x;
-        y = servicesShift.y;
-
-        stage.style.position = "absolute";
-        stage.style.top = "50%";
-        stage.style.left = "50%";
-        stage.style.zIndex = "100";
-      } else {
-        // ===== PHASE 4: About section (card moves from services to about) =====
+      } else if (scroll < galleryBottomVal - 400) {
+        // ===== PHASE 3.5: Inside Gallery (Gone) =====
+        phase = "in-abyss";
+        opacity = 0;
+        scale = 0;
+        isFixed = true;
+      } else if (scroll < aboutSettleEnd) {
+        // ===== PHASE 4: About section (Reappear from abyss) =====
         phase = "about";
         rotation = 180;
         borderRadius = 0;
         stage.classList.remove("is-locked");
 
-        const settleP = Math.min(Math.max((scroll - servicesExitStart) / (aboutSettleEnd - servicesExitStart), 0), 1);
+        const reappearStart = galleryBottomVal - 300;
+        const settleP = Math.min(Math.max((scroll - reappearStart) / (aboutSettleEnd - reappearStart), 0), 1);
         const settleEase = settleP * settleP * (3 - 2 * settleP);
 
-        // Interpolate smoothly from Services position to About landing position
-        x = servicesShift.x + settleEase * (aboutShift.x - servicesShift.x);
-        y = servicesShift.y + settleEase * (aboutShift.y - servicesShift.y);
+        opacity = settleEase;
+        scale = settleEase;
+
+        x = aboutShift.x;
+        y = aboutShift.y;
+
+        stage.style.position = "absolute";
+        stage.style.top = "50%";
+        stage.style.left = "50%";
+        stage.style.zIndex = "100";
+      } else if (scroll < servicesSettleStart) {
+        // ===== PHASE 5: Normal Scrolling (About pos) =====
+        phase = "post-about";
+        rotation = 180;
+        borderRadius = 0;
+        opacity = 1;
+        scale = 1;
+        x = aboutShift.x;
+        y = aboutShift.y;
+        stage.style.position = "absolute";
+        stage.style.top = "50%";
+        stage.style.left = "50%";
+        stage.style.zIndex = "100";
+      } else {
+        // ===== PHASE 6: Services Snap (Way deep) =====
+        phase = "services-snap";
+        rotation = 180;
+        borderRadius = 0;
+        opacity = 1;
+        
+        const snapP = Math.min(Math.max((scroll - servicesSettleStart) / (servicesSettleEnd - servicesSettleStart), 0), 1);
+        const snapEase = snapP * snapP * (3 - 2 * snapP);
+        
+        x = aboutShift.x + snapEase * (servicesShift.x - aboutShift.x);
+        y = aboutShift.y + snapEase * (servicesShift.y - aboutShift.y);
+
+        if (snapP > 0.95) {
+          stage.classList.add("is-locked");
+        } else {
+          stage.classList.remove("is-locked");
+        }
 
         stage.style.position = "absolute";
         stage.style.top = "50%";
@@ -1191,29 +1246,38 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="services" id="services" aria-labelledby="services-title" ref={servicesSectionRef}>
-          <motion.div style={{ opacity: servicesOpacity, position: "absolute", top: 0, left: 0, right: 0, bottom: 0, zIndex: -1, backgroundColor: "#000" }}></motion.div>
-          <motion.div style={{ opacity: servicesOpacity }} className="services-container">
-            <div className="services-content-wrapper-ref">
-              <ScrollReveal variant="wipe">
-                <div className="ref-quote-container">
-                  <h2 className="ref-quote">
-                    WE BELIEVE GREAT DESIGN ALWAYS BEGINS WITH UNDERSTANDING THE GOALS AND USERS BEHIND EVERY PROJECT TO CREATE MEANINGFUL AND EFFECTIVE <span className="dim-text">DIGITAL EXPERIENCES.</span>
-                  </h2>
-                </div>
-              </ScrollReveal>
-              
-              <ScrollReveal delay={400} variant="fluid-flow">
-                <div className="ref-signature-container">
-                  <div className="ref-signature">Rahul Portfolio</div>
-                </div>
-              </ScrollReveal>
+        <section className="infinite-gallery-section" aria-label="Infinite image gallery" ref={gallerySectionRef}>
+          <div className="infinite-gallery-container">
+            <InfiniteGallery 
+              images={[
+                "/images/reel/reel-1.png",
+                "/images/reel/reel-2.png",
+                "/images/reel/reel-3.png",
+                "/images/reel/reel-4.png",
+                "/images/reel/reel-5.png",
+                "/images/reel/reel-6.png",
+                "/images/IMG_5775.PNG",
+                "/images/IMG_6471.jpg"
+              ]}
+              speed={-0.5}
+              fadeSettings={{
+                fadeIn: { start: 0.05, end: 0.25 },
+                fadeOut: { start: 0.8, end: 0.95 }
+              }}
+              blurSettings={{
+                blurIn: { start: 0.0, end: 0.2 },
+                blurOut: { start: 0.8, end: 0.95 },
+                maxBlur: 12.0
+              }}
+              className="infinite-gallery-canvas"
+            />
+            <div className="gallery-overlay-text">
+              <h2 className="gallery-quote">
+                <span className="italic-text">I create;</span> therefore I am
+              </h2>
             </div>
-
-            <div className="services-card-landing" aria-hidden="true">
-              {/* This is the spot where the flying card will land */}
-            </div>
-          </motion.div>
+            <div className="gallery-card-landing" ref={galleryLandingRef} aria-hidden="true" />
+          </div>
         </section>
 
         <section className="about" id="about" aria-labelledby="about-title">
@@ -1369,27 +1433,29 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="infinite-gallery-section" aria-label="Infinite image gallery">
-          <div className="infinite-gallery-container">
-            <InfiniteGallery 
-              images={[
-                "/images/reel/reel-1.png",
-                "/images/reel/reel-2.png",
-                "/images/reel/reel-3.png",
-                "/images/reel/reel-4.png",
-                "/images/reel/reel-5.png",
-                "/images/reel/reel-6.png",
-                "/images/IMG_5775.PNG",
-                "/images/IMG_6471.jpg"
-              ]}
-              className="infinite-gallery-canvas"
-            />
-            <div className="gallery-overlay-text">
-              <h2 className="gallery-quote">
-                <span className="italic-text">I create;</span> therefore I am
-              </h2>
+        <section className="services" id="services" aria-labelledby="services-title" ref={servicesSectionRef}>
+          <motion.div style={{ opacity: servicesOpacity, position: "absolute", top: 0, left: 0, right: 0, bottom: 0, zIndex: -1, backgroundColor: "#000" }}></motion.div>
+          <motion.div style={{ opacity: servicesOpacity }} className="services-container">
+            <div className="services-content-wrapper-ref">
+              <ScrollReveal variant="wipe">
+                <div className="ref-quote-container">
+                  <h2 className="ref-quote">
+                    WE BELIEVE GREAT DESIGN ALWAYS BEGINS WITH UNDERSTANDING THE GOALS AND USERS BEHIND EVERY PROJECT TO CREATE MEANINGFUL AND EFFECTIVE <span className="dim-text">DIGITAL EXPERIENCES.</span>
+                  </h2>
+                </div>
+              </ScrollReveal>
+              
+              <ScrollReveal delay={400} variant="fluid-flow">
+                <div className="ref-signature-container">
+                  <div className="ref-signature">Rahul Portfolio</div>
+                </div>
+              </ScrollReveal>
             </div>
-          </div>
+
+            <div className="services-card-landing" aria-hidden="true">
+              {/* This is the spot where the flying card will land */}
+            </div>
+          </motion.div>
         </section>
 
         <section className="testimonials" aria-labelledby="testimonials-title">
