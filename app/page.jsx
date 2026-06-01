@@ -471,7 +471,52 @@ export default function Home() {
   const portraitStageRef = useRef(null);
   const projectsContainerRef = useRef(null);
   const theaterSectionRef = useRef(null);
-  const mousePosRef = useRef({ x: 600, y: 400 });
+  const mousePosRef = useRef({ x: 0, y: 0 });
+  const [gyroPermission, setGyroPermission] = useState("pending");
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    setIsMobile(window.innerWidth <= 768);
+    // Initialize mouse position to center to prevent jumps
+    mousePosRef.current = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+    
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  const requestGyro = async () => {
+    if (typeof DeviceOrientationEvent !== "undefined" && typeof DeviceOrientationEvent.requestPermission === "function") {
+      try {
+        const permission = await DeviceOrientationEvent.requestPermission();
+        setGyroPermission(permission);
+        if (permission === "granted") {
+          window.addEventListener("deviceorientation", handleOrientation);
+        }
+      } catch (error) {
+        console.error("Gyro permission error:", error);
+      }
+    } else {
+      setGyroPermission("granted");
+      window.addEventListener("deviceorientation", handleOrientation);
+    }
+  };
+
+  const handleOrientation = (event) => {
+    if (!event.beta || !event.gamma) return;
+    // Map tilt to a cursor-like coordinate system
+    // beta: -180 to 180 (front/back tilt), gamma: -90 to 90 (left/right tilt)
+    const centerX = window.innerWidth / 2;
+    const centerY = window.innerHeight / 2;
+    const tiltX = Math.max(-30, Math.min(30, event.gamma)) / 30; // -1 to 1
+    const tiltY = Math.max(-30, Math.min(30, event.beta - 45)) / 30; // -1 to 1 (offset beta for natural holding angle)
+    
+    mousePosRef.current = { 
+      x: centerX + tiltX * (window.innerWidth * 0.4),
+      y: centerY + tiltY * (window.innerHeight * 0.4)
+    };
+  };
+
   const { scrollYProgress } = useScroll({
     target: projectsContainerRef,
     offset: ["start start", "end end"]
@@ -651,22 +696,9 @@ export default function Home() {
     let lockImpactTime = 0;
 
     const updateHeroMotion = (scroll) => {
-      if (window.innerWidth <= 768) {
-        stage.style.position = "absolute";
-        stage.style.top = "50%";
-        stage.style.left = "50%";
-        stage.style.setProperty("--flip-rotation", "0deg");
-        stage.style.setProperty("--flip-shift", "0px");
-        stage.style.setProperty("--stage-shift", "0px");
-        stage.style.setProperty("--stage-shift-x", "0px");
-        stage.style.setProperty("--stage-scale", "1");
-        stage.style.setProperty("--stage-opacity", "1");
-        stage.style.setProperty("--card-border-radius", "0px");
-        scene.style.setProperty("--text-parallax", "0px");
-        stage.classList.remove("circle-mode");
-        return;
-      }
-
+      const mobileBreakpoint = 768;
+      const isMobileView = window.innerWidth <= mobileBreakpoint;
+      
       const { heroBottom, theaterTop: theaterTopBound, theaterBottom: theaterBottomBound, servicesBottom } = sectionBounds;
 
       // Define transition zones
@@ -700,7 +732,8 @@ export default function Home() {
         phase = "hero";
         isFixed = false;
 
-        const morphStartZone = theaterTop - 400;
+        const morphOffset = isMobileView ? 200 : 400;
+        const morphStartZone = theaterTop - morphOffset;
 
         if (scroll < morphStartZone) {
           // ----- PHASE 1a: Card Flips -----
@@ -724,20 +757,28 @@ export default function Home() {
           smoothMouse.x = viewCenterX;
           smoothMouse.y = cardViewportY;
 
+          // GYRO OFFSET on mobile
+          if (isMobileView) {
+            const gyroX = (mousePosRef.current.x - (window.innerWidth / 2)) * 0.15;
+            const gyroY = (mousePosRef.current.y - (window.innerHeight / 2)) * 0.15;
+            x += gyroX;
+            y += gyroY;
+          }
+
         } else {
           // ----- PHASE 1b: Card morphs to circle & flies to cursor -----
           rotation = 180; // fully flipped
 
-          // Morph progress from 0 to 1 over the last 400px of the hero section
-          const rawMorphP = Math.min(Math.max((scroll - morphStartZone) / 400, 0), 1);
+          // Morph progress from 0 to 1
+          const rawMorphP = Math.min(Math.max((scroll - morphStartZone) / morphOffset, 0), 1);
           const morphEase = rawMorphP * rawMorphP * (3 - 2 * rawMorphP); // smoothstep
           circleP = morphEase; // exposed to height interpolation
 
           borderRadius = morphEase * 50;
-          scale = 1 - morphEase * 0.7; // Scale down to 0.3 (cursor circle)
+          scale = 1 - morphEase * (isMobileView ? 0.45 : 0.7); // Scale down on cursor
 
           // Smooth cursor following
-          const lerpFactor = 0.14;
+          const lerpFactor = isMobileView ? 0.08 : 0.14;
           smoothMouse.x += (mousePosRef.current.x - smoothMouse.x) * lerpFactor;
           smoothMouse.y += (mousePosRef.current.y - smoothMouse.y) * lerpFactor;
 
@@ -745,7 +786,6 @@ export default function Home() {
           const startViewportY = theaterTop - scroll;
 
           // Smoothly update smoothMouse to the actual mouse position as we fly in
-          // This avoids the "jump" when moving from center-top to current mouse pos
           smoothMouse.x += (mousePosRef.current.x - smoothMouse.x) * 0.08;
           smoothMouse.y += (mousePosRef.current.y - smoothMouse.y) * 0.08;
 
@@ -753,7 +793,7 @@ export default function Home() {
           const targetViewportX = startViewportX + (smoothMouse.x - startViewportX) * morphEase;
           const targetViewportY = startViewportY + (smoothMouse.y - startViewportY) * morphEase;
 
-          // Convert viewport coordinate to page coordinates (since isFixed is false, positioning is absolute)
+          // Convert viewport coordinate to page coordinates
           x = targetViewportX - (window.innerWidth / 2);
           y = (targetViewportY + scroll) - baseCoords.y;
         }
@@ -774,10 +814,10 @@ export default function Home() {
         // Morph is fully complete
         circleP = 1; // exposed to height interpolation
         borderRadius = 50;
-        scale = 0.3; // fully shrunk
+        scale = isMobileView ? 0.55 : 0.3; // larger on mobile
 
         // Smooth cursor following
-        const lerpFactor = 0.14;
+        const lerpFactor = isMobileView ? 0.08 : 0.14;
         smoothMouse.x += (mousePosRef.current.x - smoothMouse.x) * lerpFactor;
         smoothMouse.y += (mousePosRef.current.y - smoothMouse.y) * lerpFactor;
 
@@ -920,11 +960,26 @@ export default function Home() {
       // Boxy grid interactive scroll transition classes
       const overlayEl = document.querySelector(".theater-grid-overlay");
       if (overlayEl) {
-        // State 1: Once we reach the video section, all rectangles flatten into a uniform layout
-        overlayEl.classList.toggle("video-reached", scroll >= theaterTopVal);
+        // For mobile, start much later so there's no dead black space
+        const triggerPoint = isMobileView ? (theaterTopVal - window.innerHeight * 0.4) : theaterTopVal;
+        overlayEl.classList.toggle("video-reached", scroll >= triggerPoint);
         
-        // State 2: As we scroll further into the video (250px travel distance), they collapse completely out of view
-        overlayEl.classList.toggle("video-fully-active", scroll >= theaterTopVal + 250);
+        // State 2: Collapse completely
+        overlayEl.classList.toggle("video-fully-active", scroll >= triggerPoint + 400);
+      }
+
+      // Auto-play/pause video based on viewport
+      if (videoRef.current) {
+        if (scroll >= theaterTopVal - window.innerHeight && scroll < theaterTopVal + window.innerHeight * 2) {
+          if (videoRef.current.paused) {
+            videoRef.current.play().catch(() => {
+              // Fallback for some browsers that require user interaction
+              // We already have a click listener on site-shell so this might help
+            });
+          }
+        } else {
+          if (!videoRef.current.paused) videoRef.current.pause();
+        }
       }
 
 
@@ -978,11 +1033,12 @@ export default function Home() {
       clearTimeout(timer2);
       window.removeEventListener("resize", handleResize);
       window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("deviceorientation", handleOrientation);
       if (rafId) window.cancelAnimationFrame(rafId);
       const overlay = document.getElementById("hero-blend-overlay");
       if (overlay) overlay.remove();
     };
-  }, []);
+  }, [gyroPermission]); // Re-run if permission changes to re-add orientation listener
 
   function handleSubmit(event) {
     event.preventDefault();
@@ -994,7 +1050,7 @@ export default function Home() {
   }
 
   return (
-    <div className="site-shell">
+    <div className="site-shell" onClick={() => { if (gyroPermission === "pending") requestGyro(); }}>
       <main>
         <div className="hero-scene" id="home" aria-labelledby="hero-title" ref={heroSceneRef}>
           <ShaderBackground className="hero-bg" smokeColor="#E3142A" />
@@ -1040,7 +1096,7 @@ export default function Home() {
               </div>
             </div>
             <div className="hero-filler-layer" aria-hidden="true">
-              <p className="hero-filler-title">PROJECT BECOMING</p>
+              <p className="hero-filler-title">l1lRED</p>
               <p className="hero-note hero-note-left">Selected identity fragments, motion tests, and visual systems.</p>
               <p className="hero-note hero-note-center">Digital designer building image-led product stories.</p>
               <p className="hero-note hero-note-right">Portfolio edition: Rahul / experimental web direction.</p>
