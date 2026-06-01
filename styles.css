@@ -2513,3 +2513,235 @@ section {
     bottom: 20px;
   }
 }
+
+/* ──────────────────────────────────────────────────────────────────────────
+   Trusted Feedback (Testimonial Parallax Grid) Section
+   ────────────────────────────────────────────────────────────────────────── */
+
+.trusted-feedback-wrapper {
+  position: relative;
+  height: 600vh; /* Increased scroll duration for more extreme distancing */
+  background-color: var(--bg);
+  z-index: 10;
+}
+
+.trusted-feedback-sticky {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  width: 100%;
+  background-color: #030303; /* Pure black aesthetic */
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.feedback-huge-text {
+  position: absolute;
+  font-family: var(--body); /* Same Space Grotesk font as the reference */
+  font-size: clamp(5rem, 14vw, 15rem);
+  font-weight: 900; /* Ultra-bold weight */
+  line-height: 0.8;
+  color: #ffffff; /* Pure white so the glass cards blur it beautifully */
+  text-align: center;
+  text-transform: uppercase;
+  z-index: 1;
+  pointer-events: none;
+  user-select: none;
+  letter-spacing: -0.05em;
+  white-space: nowrap;
+}
+
+.feedback-grid-sticky {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 32px;
+  width: min(100% - 32px, 1400px);
+  margin-inline: auto;
+  align-items: start;
+  padding-top: clamp(80px, 12vh, 140px);
+  z-index: 5;
+  pointer-events: none; /* Let clicks pass through empty space */
+}
+
+.feedback-column {
+  display: flex;
+  flex-direction: column;
+  position: relative; /* Anchor for absolutely positioned cards */
+}
+
+.feedback-column.col-2 {
+  /* margin-top: 15vh; Removed as per user request to not stagger */
+}
+
+.feedback-card {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  pointer-events: none; /* Let container be click-through, clicks pass to inner card */
+  display: flex;
+  flex-direction: column;
+}
+
+.feedback-card-inner {
+  pointer-events: auto; /* Enable clicks and hovers on the card itself */
+  position: relative;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 36px 30px;
+  
+  /* High-fidelity Frosted Glassmorphism */
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.02) 100%);
+  backdrop-filter: blur(36px) saturate(140%); /* Strong blur to clearly diffuse text behind it */
+  -webkit-backdrop-filter: blur(36px) saturate(140%);
+  
+  /* Precision thin glass borders */
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid rgba(255, 255, 255, 0.22);
+  border-left: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 24px; /* Premium smooth curves */
+  
+  box-shadow: 
+    0 20px 50px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0px rgba(255, 255, 255, 0.15); /* elegant inner highlight */
+  transition: all 400ms cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: background-color, border-color, box-shadow, transform;
+  overflow: hidden;
+}
+
+/* Frosted Micro-Grain Texture Overlay - NO mix-blend-mode to ensure maximum backdrop-filter compatibility on WebKit/Chrome */
+.feedback-card-inner::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.045'/%3E%3C/svg%3E");
+  pointer-events: none;
+}
+
+.feedback-card:hover .feedback-card-inner {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.04) 100%);
+  border-color: rgba(255, 255, 255, 0.25);
+  box-shadow: 
+    0 24px 60px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0px rgba(255, 255, 255, 0.25);
+  transform: translateY(-8px); /* premium hover lift */
+}
+
+.card-quote-icon {
+  position: relative;
+  z-index: 2;
+  width: 24px;
+  height: 24px;
+  color: var(--accent);
+  margin-bottom: 24px;
+}
+
+.card-text {
+  position: relative;
+  z-index: 2;
+  font-family: var(--body); /* Same Space Grotesk font as the reference */
+  font-size: clamp(0.65rem, 0.72vw, 0.78rem); /* Reduced elegant font size */
+  font-weight: 600; /* Bold weight but balanced for readability */
+  line-height: 1.5;
+  color: #ffffff; /* Pure white */
+  text-transform: uppercase;
+  margin: 0 0 24px 0;
+  letter-spacing: 0.01em;
+}
+
+.card-footer {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  border-top: none;
+  padding-top: 0;
+}
+
+.card-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #333, #111);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--display);
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  flex-shrink: 0;
+}
+
+.card-author-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.card-author {
+  font-family: var(--display);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.card-role {
+  font-family: var(--body);
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Responsive Overrides for Feedback Section */
+@media (max-width: 1024px) {
+  .feedback-grid-sticky {
+    gap: 20px;
+  }
+  .feedback-column {
+    gap: 20px;
+  }
+  .feedback-card {
+    padding: 24px;
+  }
+  .feedback-huge-text {
+    font-size: clamp(5rem, 14vw, 12rem);
+  }
+}
+
+@media (max-width: 810px) {
+  .trusted-feedback-wrapper {
+    height: 300vh; /* Shorter scroll duration on mobile */
+  }
+  .feedback-grid-sticky {
+    grid-template-columns: 1fr;
+    gap: 24px;
+    padding-top: 40px;
+  }
+  .feedback-column {
+    gap: 24px;
+  }
+  .feedback-column.col-2 {
+    margin-top: 0; /* Reset offset on mobile single column */
+  }
+  .feedback-card:hover {
+    transform: none; /* disable lift on touch screen viewports */
+  }
+}
+

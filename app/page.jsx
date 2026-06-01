@@ -6,6 +6,7 @@ import { motion, useScroll, useTransform } from "framer-motion";
 import anime from "animejs";
 import ShaderBackground from "../components/ShaderBackground";
 import InfiniteGallery from "../components/InfiniteGallery";
+import TrustedFeedback from "../components/TrustedFeedback";
 
 const services = [
   {
@@ -1203,6 +1204,8 @@ export default function Home() {
           </div>
         </section>
 
+        <TrustedFeedback />
+
         {/* ═══════ Kodak Film Reel — Scroll-Pinned Unroll ═══════ */}
         <section className="film-reel-section" ref={filmReelRef} aria-label="Film reel gallery">
           <div className="film-reel-sticky">
@@ -1298,64 +1301,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="testimonials" aria-labelledby="testimonials-title">
-          <ScrollReveal variant="wipe">
-            <div className="section-heading-wide">
-              <h2 id="testimonials-title">What clients say</h2>
-              <p>Results from collaborative work across brand identity, web design, and product interfaces.</p>
-            </div>
-          </ScrollReveal>
-          <div className="testimonial-grid">
-            {[
-              {
-                text: "Duncan truly understood my vision and turned it into impactful designs. The results went beyond my expectations.",
-                name: "John Harris",
-                title: "Marketing Director"
-              },
-              {
-                metric: "98%",
-                label: "Satisfaction Rate",
-                isMetric: true
-              },
-              {
-                text: "He took the time to understand our goals and delivered a design that resonated perfectly with our audience.",
-                name: "Michael Lee",
-                title: "Product Manager"
-              },
-              {
-                metric: "200%",
-                label: "Client growth impact",
-                isMetric: true,
-                accent: true
-              },
-              {
-                text: "His design skills are unmatched. He transformed my ideas into a high-performing, visually striking website.",
-                name: "Sarah Johnson",
-                title: "CEO"
-              },
-              {
-                text: "As a small business owner, I appreciated how stress-free Duncan made the process.",
-                name: "Laura Bennett",
-                title: "Small Business Owner"
-              }
-            ].map((item, index) => (
-              <ScrollReveal key={index} delay={(index % 3) * 100} variant="fluid-flow">
-                {item.isMetric ? (
-                  <article className={`metric-card ${item.accent ? 'accent' : ''}`}>
-                    <span>{item.metric}</span>
-                    <p>{item.label}</p>
-                  </article>
-                ) : (
-                  <article>
-                    <p>{item.text}</p>
-                    <strong>{item.name}</strong>
-                    <span>{item.title}</span>
-                  </article>
-                )}
-              </ScrollReveal>
-            ))}
-          </div>
-        </section>
+
 
         <section className="journal" id="journal" aria-labelledby="journal-title">
           <ScrollReveal variant="wipe">
