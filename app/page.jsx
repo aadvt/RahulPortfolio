@@ -757,45 +757,44 @@ export default function Home() {
           smoothMouse.x = viewCenterX;
           smoothMouse.y = cardViewportY;
 
-          // GYRO OFFSET on mobile
-          if (isMobileView) {
-            const gyroX = (mousePosRef.current.x - (window.innerWidth / 2)) * 0.15;
-            const gyroY = (mousePosRef.current.y - (window.innerHeight / 2)) * 0.15;
-            x += gyroX;
-            y += gyroY;
-          }
+          // DESKTOP ONLY: No gyro/cursor reactivity on mobile — pill follows fixed path
 
         } else {
-          // ----- PHASE 1b: Card morphs to circle & flies to cursor -----
+          // ----- PHASE 1b: Card morphs to pill -----
           rotation = 180; // fully flipped
 
           // Morph progress from 0 to 1
           const rawMorphP = Math.min(Math.max((scroll - morphStartZone) / morphOffset, 0), 1);
           const morphEase = rawMorphP * rawMorphP * (3 - 2 * rawMorphP); // smoothstep
-          circleP = morphEase; // exposed to height interpolation
+          circleP = isMobileView ? 0 : morphEase; // exposed to height interpolation
 
           borderRadius = morphEase * 50;
-          scale = 1 - morphEase * (isMobileView ? 0.45 : 0.7); // Scale down on cursor
+          scale = 1 - morphEase * (isMobileView ? 0.45 : 0.7);
 
-          // Smooth cursor following
-          const lerpFactor = isMobileView ? 0.08 : 0.14;
-          smoothMouse.x += (mousePosRef.current.x - smoothMouse.x) * lerpFactor;
-          smoothMouse.y += (mousePosRef.current.y - smoothMouse.y) * lerpFactor;
+          if (isMobileView) {
+            // MOBILE: Fixed center path — no cursor/touch reactivity
+            x = 0;
+            y = theaterTop - baseCoords.y; // pinned at theater entry
+            smoothMouse.x = window.innerWidth / 2;
+            smoothMouse.y = window.innerHeight / 2;
+          } else {
+            // DESKTOP: Fly toward cursor
+            const lerpFactor = 0.14;
+            smoothMouse.x += (mousePosRef.current.x - smoothMouse.x) * lerpFactor;
+            smoothMouse.y += (mousePosRef.current.y - smoothMouse.y) * lerpFactor;
 
-          const startViewportX = window.innerWidth / 2;
-          const startViewportY = theaterTop - scroll;
+            const startViewportX = window.innerWidth / 2;
+            const startViewportY = theaterTop - scroll;
 
-          // Smoothly update smoothMouse to the actual mouse position as we fly in
-          smoothMouse.x += (mousePosRef.current.x - smoothMouse.x) * 0.08;
-          smoothMouse.y += (mousePosRef.current.y - smoothMouse.y) * 0.08;
+            smoothMouse.x += (mousePosRef.current.x - smoothMouse.x) * 0.08;
+            smoothMouse.y += (mousePosRef.current.y - smoothMouse.y) * 0.08;
 
-          // Interpolate viewport relative position from startViewport to smoothMouse
-          const targetViewportX = startViewportX + (smoothMouse.x - startViewportX) * morphEase;
-          const targetViewportY = startViewportY + (smoothMouse.y - startViewportY) * morphEase;
+            const targetViewportX = startViewportX + (smoothMouse.x - startViewportX) * morphEase;
+            const targetViewportY = startViewportY + (smoothMouse.y - startViewportY) * morphEase;
 
-          // Convert viewport coordinate to page coordinates
-          x = targetViewportX - (window.innerWidth / 2);
-          y = (targetViewportY + scroll) - baseCoords.y;
+            x = targetViewportX - (window.innerWidth / 2);
+            y = (targetViewportY + scroll) - baseCoords.y;
+          }
         }
 
         stage.classList.remove("is-locked");
@@ -805,29 +804,32 @@ export default function Home() {
         stage.style.zIndex = "100";
 
       } else if (scroll >= theaterMorphStart && scroll < theaterExitStart) {
-        // ===== PHASE 2: Theater (circle morph + cursor follow) =====
+        // ===== PHASE 2: Theater (pill follows cursor on desktop, fixed center on mobile) =====
         phase = "theater";
         isFixed = true;
         rotation = 180;
         stage.classList.remove("is-locked");
 
-        // Morph is fully complete
-        circleP = 1; // exposed to height interpolation
+        circleP = isMobileView ? 0 : 1;
         borderRadius = 50;
-        scale = isMobileView ? 0.55 : 0.3; // larger on mobile
+        scale = isMobileView ? 0.55 : 0.3;
 
-        // Smooth cursor following
-        const lerpFactor = isMobileView ? 0.08 : 0.14;
-        smoothMouse.x += (mousePosRef.current.x - smoothMouse.x) * lerpFactor;
-        smoothMouse.y += (mousePosRef.current.y - smoothMouse.y) * lerpFactor;
+        if (isMobileView) {
+          // MOBILE: Pill stays fixed at viewport center — no cursor/touch reactivity
+          currentFixedX = window.innerWidth / 2;
+          currentFixedY = window.innerHeight / 2;
+        } else {
+          // DESKTOP: Pill follows cursor smoothly
+          const lerpFactor = 0.14;
+          smoothMouse.x += (mousePosRef.current.x - smoothMouse.x) * lerpFactor;
+          smoothMouse.y += (mousePosRef.current.y - smoothMouse.y) * lerpFactor;
+          currentFixedX = smoothMouse.x;
+          currentFixedY = smoothMouse.y;
+        }
 
-        // Glued to the cursor
-        currentFixedX = smoothMouse.x;
-        currentFixedY = smoothMouse.y;
-        
         // Capture position for next phase snap
-        snapStartMouse.x = smoothMouse.x;
-        snapStartMouse.y = smoothMouse.y;
+        snapStartMouse.x = currentFixedX;
+        snapStartMouse.y = currentFixedY;
 
         stage.style.position = "fixed";
         stage.style.top = "0";
@@ -843,8 +845,9 @@ export default function Home() {
         const snapP = Math.min(Math.max((scroll - theaterExitStart) / (theaterExitEnd - theaterExitStart), 0), 1);
         const snapEase = snapP * snapP * (3 - 2 * snapP);
 
-        circleP = 1 - snapEase;
-        borderRadius = 50 * (1 - snapEase);
+        // Keep pill shape throughout the snap — do not morph back to rectangle
+        circleP = 0;
+        borderRadius = 50;
         scale = 0.3 + snapEase * 0.7;
 
         // Target viewport position for the landing spot
@@ -885,7 +888,10 @@ export default function Home() {
         // ===== PHASE 3.5: Services section (Locked in place) =====
         phase = "services";
         rotation = 180;
-        borderRadius = 0;
+        // Keep pill shape on both mobile and desktop — do not reset to rectangle
+        borderRadius = 50;
+        circleP = isMobileView ? 0 : 0; // flat pill on both
+        scale = 1;
         stage.classList.add("is-locked");
 
         x = servicesShift.x;
@@ -896,30 +902,42 @@ export default function Home() {
         stage.style.left = "50%";
         stage.style.zIndex = "100";
       } else {
-        // ===== PHASE 4: Services vanish into gallery =====
+        // ===== PHASE 4: Services vanish — pill zooms into gallery abyss (fully reversible) =====
         phase = "services";
         rotation = 180;
-        borderRadius = 0;
+        borderRadius = 50;
+        circleP = 0;
+        isFixed = true; // Switch to fixed so pill doesn't drift upward as page scrolls
         stage.classList.remove("is-locked");
-
-        x = servicesShift.x;
-        y = servicesShift.y;
 
         const vanishP = Math.min(Math.max((scroll - servicesExitStart) / (servicesDisappearEnd - servicesExitStart), 0), 1);
         const vanishEase = vanishP * vanishP * (3 - 2 * vanishP);
-        scale = 1 - vanishEase * 0.85;
+        scale = 1 - vanishEase * 0.95; // shrink almost to zero
         opacity = 1 - vanishEase;
-        y += vanishEase * 140;
 
-        stage.style.position = "absolute";
-        stage.style.top = "50%";
-        stage.style.left = "50%";
+        // Viewport position where pill was sitting in Phase 3.5 (at the services card landing)
+        // This is the pill's viewport position at the exact moment Phase 4 begins
+        const phaseStartViewX = baseCoords.x + servicesShift.x;
+        const phaseStartViewY = baseCoords.y + servicesShift.y - servicesExitStart;
+
+        // Target: viewport center (where gallery images converge to infinity)
+        const vCenterX = window.innerWidth / 2;
+        const vCenterY = window.innerHeight / 2;
+
+        // Drift pill toward the gallery's vanishing point while it shrinks
+        // Using only 35% of the drift so it zooms inward without fully teleporting to center
+        currentFixedX = phaseStartViewX + (vCenterX - phaseStartViewX) * vanishEase * 0.35;
+        currentFixedY = phaseStartViewY + (vCenterY - phaseStartViewY) * vanishEase * 0.35;
+
+        stage.style.position = "fixed";
+        stage.style.top = "0";
+        stage.style.left = "0";
         stage.style.zIndex = "100";
       }
 
       // Apply circle mode class for glow effect, and interpolate stage height to be a perfect square
       // circleP is properly scoped (0 = card, 1 = full circle)
-      if (phase === "theater" || phase === "theater-exit") {
+      if ((phase === "theater" || phase === "theater-exit") && !isMobileView) {
         stage.classList.add("circle-mode");
         // Natural card width & height
         const naturalW = stage.offsetWidth || 300;
@@ -1013,6 +1031,7 @@ export default function Home() {
       scene.style.setProperty("--text-parallax", `${textParallaxP * 180}px`);
 
       stage.dataset.phase = phase; 
+      scene.classList.toggle("card-over-video", scroll > 10);
 
       lastPhase = phase;
     };

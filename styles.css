@@ -266,6 +266,16 @@ section {
   z-index: 10;
 }
 
+.hero-scene.card-over-video {
+  z-index: 2147483646 !important;
+  overflow: visible !important;
+  pointer-events: none;
+}
+
+.hero-scene.card-over-video .portrait-stage {
+  z-index: 2147483647 !important;
+}
+
 .hero-bg {
   position: absolute;
   top: 0;
@@ -1575,8 +1585,8 @@ section {
   }
 
   .hero-card-container {
-    width: clamp(200px, 55vw, 280px) !important;
-    height: clamp(260px, 70vw, 360px) !important;
+    width: clamp(190px, 55vw, 280px) !important;
+    height: clamp(82px, 22vw, 120px) !important;
     margin: -3vh 0 !important;
     position: relative !important;
     z-index: 20 !important;
@@ -1586,12 +1596,12 @@ section {
   }
 
   .portrait-stage {
-    width: 100% !important;
-    height: 100% !important;
-    position: absolute !important;
-    top: 50% !important;
-    left: 50% !important;
-    transform: translate3d(calc(-50% + var(--stage-shift-x)), calc(-50% + var(--stage-shift)), 0) scale(var(--stage-scale)) !important;
+    width: clamp(190px, 55vw, 280px);
+    height: clamp(82px, 22vw, 120px);
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate3d(calc(-50% + var(--stage-shift-x)), calc(-50% + var(--stage-shift)), 0) scale(var(--stage-scale));
     border-radius: var(--card-border-radius, 0px) !important;
     box-shadow: 0 30px 60px rgba(0,0,0,0.6) !important;
   }
@@ -2494,18 +2504,21 @@ section {
 
 @media (max-width: 768px) {
   .theater-track {
-    height: 180vh !important; /* Reduced from 300vh to tighten the gap */
+    height: 100svh !important;
+    min-height: 100vh !important;
     position: relative;
     z-index: 40 !important;
     display: block !important;
     background: #000;
-    margin-top: -10vh; /* Pull theater section up to overlap or meet hero faster */
+    margin-top: 0 !important;
+    overflow: hidden;
   }
 
   .theater-sticky {
-    position: sticky !important;
+    position: relative !important;
     top: 0;
-    height: 100vh !important;
+    height: 100svh !important;
+    min-height: 100vh !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
@@ -2514,7 +2527,8 @@ section {
 
   .theater-container {
     width: 100vw !important; /* Fill width */
-    height: 100vh !important; /* Fill height */
+    height: 100svh !important; /* Fill height */
+    min-height: 100vh !important;
     max-width: none !important;
     display: flex !important;
     align-items: center;
@@ -2537,6 +2551,11 @@ section {
     object-fit: cover !important; /* Ensures the video itself fills the box */
     display: block !important;
     opacity: 1 !important;
+  }
+
+  .theater-bottom-fade {
+    height: 120px !important;
+    opacity: 0.45 !important;
   }
 
   .theater-grid-overlay {

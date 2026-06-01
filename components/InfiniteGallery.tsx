@@ -293,11 +293,12 @@ function GalleryScene({
 		}));
 	}, [depthRange, spatialPositions, totalImages, visibleCount]);
 
-	// Handle scroll input
+	// Handle scroll input - INVERTED: scrolling down moves images inward (away from viewer)
 	const handleWheel = useCallback(
 		(event: WheelEvent) => {
 			event.preventDefault();
-			setScrollVelocity((prev) => prev + event.deltaY * 0.01 * speed);
+			// Negate deltaY so scrolling down moves images inward (into the abyss)
+			setScrollVelocity((prev) => prev - event.deltaY * 0.01 * speed);
 			setAutoPlay(false);
 			lastInteraction.current = Date.now();
 		},
@@ -350,16 +351,16 @@ function GalleryScene({
 			lastScrollY.current = currentScrollY;
 
 			if (Math.abs(scrollDelta) > 0) {
-				// Multiply by a factor to convert scroll pixels to gallery speed
-				setScrollVelocity((prev) => prev + scrollDelta * 0.05 * speed);
+				// Negate scrollDelta so scrolling down moves images inward (away from viewer)
+				setScrollVelocity((prev) => prev - scrollDelta * 0.05 * speed);
 				setAutoPlay(false);
 				lastInteraction.current = Date.now();
 			}
 		}
 
-		// Apply auto-play (respecting speed direction)
+		// Apply auto-play: drift inward (negative velocity = move toward higher z = inward)
 		if (autoPlay) {
-			const direction = speed < 0 ? -1 : 1;
+			const direction = speed < 0 ? 1 : -1;
 			setScrollVelocity((prev) => prev + direction * 0.3 * delta);
 		}
 
