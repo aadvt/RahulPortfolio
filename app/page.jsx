@@ -535,8 +535,8 @@ export default function Home() {
     target: filmReelRef,
     offset: ["start start", "end end"]
   });
-  // The film strip starts fully hidden inside the canister (translated left) and moves right as you scroll
-  const filmStripX = useTransform(filmReelProgress, [0, 1], ["-100%", "0%"]);
+  // Keep the reel partially unrolled so the section matches the reference immediately.
+  const filmStripX = useTransform(filmReelProgress, [0, 1], ["-18%", "0%"]);
   // Canister subtle rotation driven by scroll
   const canisterRotate = useTransform(filmReelProgress, [0, 1], [0, 720]);
 
@@ -1263,7 +1263,7 @@ export default function Home() {
         <TrustedFeedback />
 
         {/* ═══════ Kodak Film Reel — Scroll-Pinned Unroll ═══════ */}
-        <section className="film-reel-section" ref={filmReelRef} aria-label="Film reel gallery">
+        <section className="film-reel-section" id="film-reel" ref={filmReelRef} aria-label="Film reel gallery">
           <div className="film-reel-sticky">
             {/* Kodak canister fixed on the left */}
             <div className="film-canister">
