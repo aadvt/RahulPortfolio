@@ -21,3 +21,7 @@ skills-lock.json
 background/# Ignore large media
 images/*.mp4
 public/images/*.mp4
+
+# Nested reference/scrap folders
+RahulPortfolio/
+randomtemplatesigot/

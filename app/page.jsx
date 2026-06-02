@@ -64,7 +64,7 @@ const mediaCarouselItems = [
   },
   {
     type: "video",
-    src: "/images/RLTCA.mp4",
+    src: "https://player.vimeo.com/video/1197780573?background=1&autoplay=1&loop=1&muted=1",
     title: "VIDEO",
     className: "media-card-wide media-card-center"
   },
@@ -415,7 +415,9 @@ export default function Home() {
 
   // Theater section references and scroll transforms
   const theaterRef = useRef(null);
-  const videoRef = useRef(null);
+  const iframeRef = useRef(null);
+  const [vimeoPlayer, setVimeoPlayer] = useState(null);
+  const isPlayingRef = useRef(false);
   const [isMuted, setIsMuted] = useState(true);
   const [timecode, setTimecode] = useState("00:14:23:18");
 
@@ -463,15 +465,49 @@ export default function Home() {
   }, []);
 
   const toggleMute = () => {
-    if (videoRef.current) {
-      const nextMute = !videoRef.current.muted;
-      videoRef.current.muted = nextMute;
-      setIsMuted(nextMute);
+    if (vimeoPlayer) {
+      vimeoPlayer.getMuted().then((muted) => {
+        const nextMute = !muted;
+        vimeoPlayer.setMuted(nextMute).then(() => {
+          setIsMuted(nextMute);
+        }).catch((err) => {
+          console.error("Vimeo setMuted error:", err);
+        });
+      }).catch(() => {
+        const nextMute = !isMuted;
+        vimeoPlayer.setMuted(nextMute).then(() => {
+          setIsMuted(nextMute);
+        });
+      });
     }
   };
 
   useEffect(() => {
     document.body.classList.toggle("dark", true);
+  }, []);
+
+  useEffect(() => {
+    const initPlayer = () => {
+      if (iframeRef.current && window.Vimeo) {
+        const player = new window.Vimeo.Player(iframeRef.current);
+        setVimeoPlayer(player);
+      }
+    };
+
+    if (window.Vimeo) {
+      initPlayer();
+    } else {
+      const script = document.createElement("script");
+      script.src = "https://player.vimeo.com/api/player.js";
+      script.async = true;
+      script.onload = initPlayer;
+      document.body.appendChild(script);
+      return () => {
+        if (document.body.contains(script)) {
+          document.body.removeChild(script);
+        }
+      };
+    }
   }, []);
 
   useEffect(() => {
@@ -893,16 +929,14 @@ export default function Home() {
       }
 
       // Auto-play/pause video based on viewport
-      if (videoRef.current) {
-        if (scroll >= theaterTopVal - window.innerHeight && scroll < theaterTopVal + window.innerHeight * 2) {
-          if (videoRef.current.paused) {
-            videoRef.current.play().catch(() => {
-              // Fallback for some browsers that require user interaction
-              // We already have a click listener on site-shell so this might help
-            });
-          }
-        } else {
-          if (!videoRef.current.paused) videoRef.current.pause();
+      if (vimeoPlayer) {
+        const shouldPlay = scroll >= theaterTopVal - window.innerHeight && scroll < theaterTopVal + window.innerHeight * 2;
+        if (shouldPlay && !isPlayingRef.current) {
+          isPlayingRef.current = true;
+          vimeoPlayer.play().catch(() => {});
+        } else if (!shouldPlay && isPlayingRef.current) {
+          isPlayingRef.current = false;
+          vimeoPlayer.pause().catch(() => {});
         }
       }
 
@@ -1124,16 +1158,15 @@ export default function Home() {
                   </div>
                 </motion.div>
 
-                {/* The actual HTML5 video */}
+                {/* Embedded Vimeo Video */}
                 <div className="theater-video-wrapper">
-                  <video
-                    ref={videoRef}
+                  <iframe
+                    ref={iframeRef}
                     className="theater-video"
-                    src="/images/RLTCA.mp4"
-                    autoPlay
-                    loop
-                    muted
-                    playsInline
+                    src="https://player.vimeo.com/video/1197780573?background=1&autoplay=1&loop=1&muted=1&api=1"
+                    style={{ width: "100%", height: "100%", border: "none" }}
+                    allow="autoplay; fullscreen"
+                    title="Cinematic Theater Video"
                   />
                 </div>
               </motion.div>
@@ -1182,6 +1215,80 @@ export default function Home() {
               </h2>
             </div>
             <div className="services-card-landing" aria-hidden="true" />
+          </div>
+        </section>
+
+        <section
+          className="media-carousel-section"
+          id="media-carousel"
+          ref={mediaCarouselRef}
+          aria-labelledby="media-carousel-title"
+        >
+          <div className="media-carousel-sticky">
+            <motion.div 
+              className="media-carousel-perspective" 
+              aria-hidden="true"
+              style={{ perspective: "1500px", perspectiveOrigin: "50% 50%" }}
+            >
+              <motion.div
+                className="media-carousel-track"
+                style={{ 
+                  rotateY: mediaCarouselRotation,
+                  rotateX: mediaCarouselTiltX,
+                  rotateZ: mediaCarouselTiltZ,
+                  z: mediaCarouselZ,
+                  transformStyle: "preserve-3d",
+                }}
+              >
+                {mediaCarouselItems.map((item, index) => {
+                  const total = mediaCarouselItems.length;
+                  const angle = (index / total) * 360;
+                  
+                  return (
+                    <motion.div
+                      key={`${item.title}-${index}`}
+                      className="media-carousel-card-wrapper"
+                      style={{
+                        rotateY: angle,
+                        transformStyle: "preserve-3d"
+                      }}
+                    >
+                      <motion.figure
+                        className={`media-carousel-card ${item.className}`}
+                        style={{
+                          // Setting z to NEGATIVE radius makes the elements form a concave room
+                          // (facing inward toward the center instead of outward)
+                          z: -radius,
+                          x: "-50%",
+                          y: "-50%",
+                          transformStyle: "preserve-3d",
+                          backfaceVisibility: "hidden",
+                        }}
+                      >
+                        <div className="media-carousel-frame">
+                          {item.type === "video" ? (
+                            <iframe
+                              src={item.src}
+                              style={{ width: "100%", height: "100%", border: "none", pointerEvents: "none" }}
+                              allow="autoplay; fullscreen"
+                              title={item.title}
+                            />
+                          ) : (
+                            <img src={item.src} alt={item.alt} loading="lazy" />
+                          )}
+                        </div>
+                        <figcaption>{item.title}</figcaption>
+                      </motion.figure>
+                    </motion.div>
+                  );
+                })}
+              </motion.div>
+            </motion.div>
+
+            <div className="media-carousel-footer">
+              <span>SCROLL TO ORBIT</span>
+              <span id="media-carousel-title">MEDIA FIELD</span>
+            </div>
           </div>
         </section>
 
@@ -1235,75 +1342,6 @@ export default function Home() {
                   EASTMAN &nbsp; PROCESSED BY RAHUL® &nbsp; 5207 219 &nbsp; EASTMAN &nbsp; PROCESSED BY RAHUL® &nbsp; 5207 219 &nbsp; EASTMAN
                 </div>
               </motion.div>
-            </div>
-          </div>
-        </section>
-
-        <section
-          className="media-carousel-section"
-          id="media-carousel"
-          ref={mediaCarouselRef}
-          aria-labelledby="media-carousel-title"
-        >
-          <div className="media-carousel-sticky">
-            <motion.div 
-              className="media-carousel-perspective" 
-              aria-hidden="true"
-              style={{ perspective: "1500px", perspectiveOrigin: "50% 50%" }}
-            >
-              <motion.div
-                className="media-carousel-track"
-                style={{ 
-                  rotateY: mediaCarouselRotation,
-                  rotateX: mediaCarouselTiltX,
-                  rotateZ: mediaCarouselTiltZ,
-                  z: mediaCarouselZ,
-                  transformStyle: "preserve-3d",
-                }}
-              >
-                {mediaCarouselItems.map((item, index) => {
-                  const total = mediaCarouselItems.length;
-                  const angle = (index / total) * 360;
-                  
-                  return (
-                    <motion.div
-                      key={`${item.title}-${index}`}
-                      className="media-carousel-card-wrapper"
-                      style={{
-                        rotateY: angle,
-                        transformStyle: "preserve-3d"
-                      }}
-                    >
-                      <motion.figure
-                        className={`media-carousel-card ${item.className}`}
-                        style={{
-                          // Setting z to NEGATIVE radius makes the elements form a concave room
-                          // (facing inward toward the center instead of outward)
-                          z: -radius,
-                          x: "-50%",
-                          y: "-50%",
-                          transformStyle: "preserve-3d",
-                          backfaceVisibility: "hidden",
-                        }}
-                      >
-                        <div className="media-carousel-frame">
-                          {item.type === "video" ? (
-                            <video src={item.src} muted loop autoPlay playsInline preload="metadata" />
-                          ) : (
-                            <img src={item.src} alt={item.alt} loading="lazy" />
-                          )}
-                        </div>
-                        <figcaption>{item.title}</figcaption>
-                      </motion.figure>
-                    </motion.div>
-                  );
-                })}
-              </motion.div>
-            </motion.div>
-
-            <div className="media-carousel-footer">
-              <span>SCROLL TO ORBIT</span>
-              <span id="media-carousel-title">MEDIA FIELD</span>
             </div>
           </div>
         </section>

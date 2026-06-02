@@ -2509,13 +2509,19 @@ section {
 }
 
 .media-carousel-frame img,
-.media-carousel-frame video {
+.media-carousel-frame video,
+.media-carousel-frame iframe {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
   filter: contrast(0.98) saturate(0.82) brightness(0.96);
   transition: filter 360ms ease, transform 700ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.media-carousel-frame iframe {
+  border: none;
+  pointer-events: none;
 }
 
 .media-carousel-card:hover img,
