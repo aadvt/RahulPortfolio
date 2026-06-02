@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Lenis from "lenis";
-import { motion, useScroll, useTransform } from "framer-motion";
+import { motion, useScroll, useTransform, useSpring } from "framer-motion";
 import anime from "animejs";
 import ShaderBackground from "../components/ShaderBackground";
 import InfiniteGallery from "../components/InfiniteGallery";
@@ -45,6 +45,50 @@ const services = [
       "Brand storytelling and messaging",
     ],
   },
+];
+
+const mediaCarouselItems = [
+  {
+    type: "image",
+    src: "/images/reel/reel-1.png",
+    alt: "Editorial portrait frame from Rahul media archive",
+    title: "PHOTO 01",
+    className: "media-card-large media-card-left"
+  },
+  {
+    type: "image",
+    src: "/images/IMG_5775.PNG",
+    alt: "Black and white portrait of Rahul",
+    title: "PORTRAIT",
+    className: "media-card-tall media-card-top"
+  },
+  {
+    type: "video",
+    src: "/images/RLTCA.mp4",
+    title: "VIDEO",
+    className: "media-card-wide media-card-center"
+  },
+  {
+    type: "image",
+    src: "/images/reel/reel-4.png",
+    alt: "Cinematic motion-blur city frame",
+    title: "PHOTO 02",
+    className: "media-card-medium media-card-right"
+  },
+  {
+    type: "image",
+    src: "/images/reel/reel-6.png",
+    alt: "Dark tactile detail frame",
+    title: "ARCHIVE",
+    className: "media-card-tall media-card-edge"
+  },
+  {
+    type: "image",
+    src: "/images/IMG_6471.jpg",
+    alt: "Secondary portrait from Rahul archive",
+    title: "STILL",
+    className: "media-card-medium media-card-far"
+  }
 ];
 
 const projects = [
@@ -540,6 +584,32 @@ export default function Home() {
   // Canister subtle rotation driven by scroll
   const canisterRotate = useTransform(filmReelProgress, [0, 1], [0, 720]);
 
+  // Meech-inspired spinning 3D carousel for mixed photo and video media.
+  const mediaCarouselRef = useRef(null);
+  const { scrollYProgress: mediaCarouselProgress } = useScroll({
+    target: mediaCarouselRef,
+    offset: ["start start", "end end"]
+  });
+  
+  // Fixed 3D Carousel (Merry-Go-Round) logic
+  const mediaCarouselRotationBase = useTransform(mediaCarouselProgress, [0, 1], [0, -360]);
+  const mediaCarouselRotation = useSpring(mediaCarouselRotationBase, {
+    stiffness: 30,
+    damping: 20,
+    mass: 1
+  });
+
+  const radius = 1200; // Use a constant radius for the math
+
+  // Perfectly centered, viewing from the inside (concave arc)
+  const mediaCarouselTiltX = -2; // slight look around
+  const mediaCarouselTiltZ = useTransform(mediaCarouselProgress, [0, 0.5, 1], [-1, 1, -1]);
+  
+  // Track is positioned so you are "inside" looking out at the inner wall
+  // Positive Z brings the center point right to the camera
+  const mediaCarouselZ = useTransform(mediaCarouselProgress, [0, 0.5, 1], [300, 500, 300]);
+  const mediaNavOpacity = useTransform(mediaCarouselProgress, [0, 0.18, 0.72, 1], [1, 1, 1, 1]);
+
   // Theater section references and scroll transforms
   const theaterRef = useRef(null);
   const videoRef = useRef(null);
@@ -772,11 +842,18 @@ export default function Home() {
           scale = 1 - morphEase * (isMobileView ? 0.45 : 0.7);
 
           if (isMobileView) {
-            // MOBILE: Fixed center path — no cursor/touch reactivity
-            x = 0;
-            y = theaterTop - baseCoords.y; // pinned at theater entry
-            smoothMouse.x = window.innerWidth / 2;
-            smoothMouse.y = window.innerHeight / 2;
+            // MOBILE: Switch to fixed positioning during morph to avoid
+            // being clipped by the hero-scene's overflow:hidden container.
+            // Animate from the card's natural screen position down to viewport center.
+            isFixed = true;
+            const cardViewportX = baseCoords.x - window.scrollX;
+            const cardViewportY = baseCoords.y - scroll;
+            const targetX = window.innerWidth / 2;
+            const targetY = window.innerHeight / 2;
+            currentFixedX = cardViewportX + (targetX - cardViewportX) * morphEase;
+            currentFixedY = cardViewportY + (targetY - cardViewportY) * morphEase;
+            smoothMouse.x = currentFixedX;
+            smoothMouse.y = currentFixedY;
           } else {
             // DESKTOP: Fly toward cursor
             const lerpFactor = 0.14;
@@ -798,10 +875,18 @@ export default function Home() {
         }
 
         stage.classList.remove("is-locked");
-        stage.style.position = "absolute";
-        stage.style.top = "50%";
-        stage.style.left = "50%";
-        stage.style.zIndex = "100";
+        if (isMobileView && isFixed) {
+          // Fixed branch — handled below in the isFixed apply block
+          stage.style.position = "fixed";
+          stage.style.top = "0";
+          stage.style.left = "0";
+          stage.style.zIndex = "9999";
+        } else {
+          stage.style.position = "absolute";
+          stage.style.top = "50%";
+          stage.style.left = "50%";
+          stage.style.zIndex = "100";
+        }
 
       } else if (scroll >= theaterMorphStart && scroll < theaterExitStart) {
         // ===== PHASE 2: Theater (pill follows cursor on desktop, fixed center on mobile) =====
@@ -902,37 +987,55 @@ export default function Home() {
         stage.style.left = "50%";
         stage.style.zIndex = "100";
       } else {
-        // ===== PHASE 4: Services vanish — pill zooms into gallery abyss (fully reversible) =====
+        // ===== PHASE 4: Bloom — pill expands like a portal and merges with the gallery =====
         phase = "services";
         rotation = 180;
-        borderRadius = 50;
         circleP = 0;
-        isFixed = true; // Switch to fixed so pill doesn't drift upward as page scrolls
+        isFixed = true;
         stage.classList.remove("is-locked");
 
         const vanishP = Math.min(Math.max((scroll - servicesExitStart) / (servicesDisappearEnd - servicesExitStart), 0), 1);
+        // Cubic ease for smooth bloom
         const vanishEase = vanishP * vanishP * (3 - 2 * vanishP);
-        scale = 1 - vanishEase * 0.95; // shrink almost to zero
-        opacity = 1 - vanishEase;
 
-        // Viewport position where pill was sitting in Phase 3.5 (at the services card landing)
-        // This is the pill's viewport position at the exact moment Phase 4 begins
-        const phaseStartViewX = baseCoords.x + servicesShift.x;
-        const phaseStartViewY = baseCoords.y + servicesShift.y - servicesExitStart;
+        // BLOOM: scale expands outward (1 → 3.5) instead of shrinking
+        scale = 1 + vanishEase * 2.5;
 
-        // Target: viewport center (where gallery images converge to infinity)
-        const vCenterX = window.innerWidth / 2;
-        const vCenterY = window.innerHeight / 2;
+        // Border-radius: stay circular through most of bloom, then dissolve toward 0 at the end
+        // This makes it look like the circle "bursts" open into a rectangle (the gallery frame)
+        const radiusCollapse = Math.max(0, (vanishP - 0.55) / 0.45); // 0→1 only in final 45%
+        borderRadius = 50 * (1 - radiusCollapse * radiusCollapse);
 
-        // Drift pill toward the gallery's vanishing point while it shrinks
-        // Using only 35% of the drift so it zooms inward without fully teleporting to center
-        currentFixedX = phaseStartViewX + (vCenterX - phaseStartViewX) * vanishEase * 0.35;
-        currentFixedY = phaseStartViewY + (vCenterY - phaseStartViewY) * vanishEase * 0.35;
+        // Fade — starts at 20% progress, completes at 90%
+        const opacityP = Math.min(Math.max((vanishP - 0.1) / 0.8, 0), 1);
+        opacity = 1 - opacityP * opacityP; // ease-in fade so bloom is visible longer
+
+        // Stay fixed at viewport center — the pill becomes the gallery's vanishing point
+        currentFixedX = window.innerWidth / 2;
+        currentFixedY = window.innerHeight / 2;
 
         stage.style.position = "fixed";
         stage.style.top = "0";
         stage.style.left = "0";
         stage.style.zIndex = "100";
+
+        // Drive the gallery bloom ripple reveal via data attribute
+        const galleryEl = document.getElementById("services");
+        if (galleryEl) {
+          galleryEl.dataset.bloomP = vanishEase.toFixed(3);
+          // The clip-path reveal is driven by CSS custom property
+          const revealRadius = vanishEase * 180; // 0% → 180% of viewport diagonal
+          galleryEl.style.setProperty("--gallery-reveal-r", `${revealRadius}vmax`);
+        }
+      }
+
+      // Reset gallery bloom when not in Phase 4
+      if (scroll < servicesExitStart) {
+        const galleryEl = document.getElementById("services");
+        if (galleryEl) {
+          galleryEl.dataset.bloomP = "0";
+          galleryEl.style.setProperty("--gallery-reveal-r", "0vmax");
+        }
       }
 
       // Apply circle mode class for glow effect, and interpolate stage height to be a perfect square
@@ -1329,6 +1432,75 @@ export default function Home() {
                   EASTMAN &nbsp; PROCESSED BY RAHUL® &nbsp; 5207 219 &nbsp; EASTMAN &nbsp; PROCESSED BY RAHUL® &nbsp; 5207 219 &nbsp; EASTMAN
                 </div>
               </motion.div>
+            </div>
+          </div>
+        </section>
+
+        <section
+          className="media-carousel-section"
+          id="media-carousel"
+          ref={mediaCarouselRef}
+          aria-labelledby="media-carousel-title"
+        >
+          <div className="media-carousel-sticky">
+            <motion.div 
+              className="media-carousel-perspective" 
+              aria-hidden="true"
+              style={{ perspective: "1500px", perspectiveOrigin: "50% 50%" }}
+            >
+              <motion.div
+                className="media-carousel-track"
+                style={{ 
+                  rotateY: mediaCarouselRotation,
+                  rotateX: mediaCarouselTiltX,
+                  rotateZ: mediaCarouselTiltZ,
+                  z: mediaCarouselZ,
+                  transformStyle: "preserve-3d",
+                }}
+              >
+                {mediaCarouselItems.map((item, index) => {
+                  const total = mediaCarouselItems.length;
+                  const angle = (index / total) * 360;
+                  
+                  return (
+                    <motion.div
+                      key={`${item.title}-${index}`}
+                      className="media-carousel-card-wrapper"
+                      style={{
+                        rotateY: angle,
+                        transformStyle: "preserve-3d"
+                      }}
+                    >
+                      <motion.figure
+                        className={`media-carousel-card ${item.className}`}
+                        style={{
+                          // Setting z to NEGATIVE radius makes the elements form a concave room
+                          // (facing inward toward the center instead of outward)
+                          z: -radius,
+                          x: "-50%",
+                          y: "-50%",
+                          transformStyle: "preserve-3d",
+                          backfaceVisibility: "hidden",
+                        }}
+                      >
+                        <div className="media-carousel-frame">
+                          {item.type === "video" ? (
+                            <video src={item.src} muted loop autoPlay playsInline preload="metadata" />
+                          ) : (
+                            <img src={item.src} alt={item.alt} loading="lazy" />
+                          )}
+                        </div>
+                        <figcaption>{item.title}</figcaption>
+                      </motion.figure>
+                    </motion.div>
+                  );
+                })}
+              </motion.div>
+            </motion.div>
+
+            <div className="media-carousel-footer">
+              <span>SCROLL TO ORBIT</span>
+              <span id="media-carousel-title">MEDIA FIELD</span>
             </div>
           </div>
         </section>
