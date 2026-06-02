@@ -91,141 +91,9 @@ const mediaCarouselItems = [
   }
 ];
 
-const projects = [
-  {
-    title: "Black Geometric Prisms",
-    featured: true,
-    category: "Branding",
-    year: "2025",
-    client: "Studio Prism",
-    image: "https://framerusercontent.com/images/2nWXrWvPxxMHSpsOkNYf8KjzP7Q.jpeg",
-    description:
-      "A collection of sharp, angular black prisms floating against a gradient dark background, showcasing a sophisticated approach to digital 3D geometric composition.",
-  },
-  {
-    title: "Pantone Very Peri Poster Design",
-    featured: false,
-    category: "Graphic Design",
-    year: "2024",
-    image: "https://framerusercontent.com/images/RFcUbpIGFydbU9WBSTc9HJRQI.jpeg",
-    description:
-      "A minimalist poster inspired by Pantone Very Peri, combining clean typography, a soft periwinkle background, and a delicate blue branch illustration.",
-  },
-  {
-    title: "Coral Spiral Abstract",
-    featured: true,
-    category: "Branding",
-    year: "2025",
-    client: "VisualForms Studio",
-    image: "https://framerusercontent.com/images/qbjsnnvP9w7UaA2syp36oUe8OSo.jpg",
-    description:
-      "A visually striking 3D abstract artwork featuring a coral-colored spiral form with smooth curves and a soft pink gradient background.",
-  },
-  {
-    title: "Intenza Brand Boutique E-Gift Card Design",
-    featured: false,
-    category: "Graphic Design",
-    year: "2023",
-    image: "https://framerusercontent.com/images/346Dg9EFyDG62n4PMiwIhATISNU.jpeg",
-    description:
-      "A modern and elegant e-gift card for Intenza Brand Boutique with a premium black holder and active lifestyle imagery.",
-  },
-  {
-    title: "Summer Vibes Festival Campaign",
-    featured: true,
-    category: "Graphic Design",
-    year: "2024",
-    client: "FestivalWorks",
-    image: "https://framerusercontent.com/images/w08JBQPFYIq2vr4OfcD9W6vxEug.jpeg",
-    description:
-      "Promotional materials for Summer Vibes Festival, including posters, flyers, and social media graphics.",
-  },
-  {
-    title: "ShopEase Redesign Sprint",
-    featured: true,
-    category: "UI / UX Design",
-    year: "2025",
-    client: "ShopEase",
-    image: "https://framerusercontent.com/images/nTU7b0ZAdWdlqCI4mQ4tGTPpDs.jpeg",
-    description:
-      "A redesign sprint focused on simplifying navigation, optimizing checkout, and improving a commerce app experience.",
-  },
-  {
-    title: "VistaHaven",
-    featured: false,
-    category: "Web Design",
-    year: "2025",
-    image: "https://framerusercontent.com/images/RzBOpbFyAywEXNkFbMTKVhq44.jpg",
-    description:
-      "A sleek real estate template designed to showcase luxury properties with elegance and sophistication.",
-  },
-  {
-    title: "InnovateTech Identity Rollout",
-    featured: false,
-    category: "Branding",
-    year: "2025",
-    image: "https://framerusercontent.com/images/NbFTTP3LTcQw2s8139xTJnscc.jpeg",
-    description:
-      "A cohesive identity system with logo, color palette, and visual style guide for a forward-looking technology company.",
-  },
-];
 
-const posts = [
-  {
-    title: "5 Design Trends That Will Define 2024",
-    category: "Insights",
-    date: "Apr 30, 2025",
-    pinned: false,
-    image: "https://framerusercontent.com/images/1wFj19qQG6zNr7gj3iTlH0Gdlu8.jpeg",
-    description:
-      "Explore the design trends influencing web, UI/UX, and branding projects, from 3D lettering to visible grid systems.",
-  },
-  {
-    title: "The Power of Typography in Web Design",
-    category: "Insights",
-    date: "May 2, 2025",
-    pinned: false,
-    image: "https://framerusercontent.com/images/mu6sFIgrbmHNxa3m94cG4VVROM.jpeg",
-    description:
-      "Learn how typography can make or break a website and how to choose fonts for impact, clarity, and readability.",
-  },
-  {
-    title: "How to Streamline Your Design Workflow",
-    category: "Tutorials",
-    date: "Apr 27, 2025",
-    pinned: true,
-    image: "https://framerusercontent.com/images/xmKml0E7v2iBI4zbbj0yVccaQwg.jpeg",
-    description:
-      "Practical strategies to improve your design process, save time, and deliver quality work more efficiently.",
-  },
-  {
-    title: "The Role of Color Psychology in Branding",
-    category: "Insights",
-    date: "Apr 22, 2025",
-    pinned: false,
-    image: "https://framerusercontent.com/images/RFcUbpIGFydbU9WBSTc9HJRQI.jpeg",
-    description:
-      "Understand how colors evoke emotions and influence brand perception to create designs that connect.",
-  },
-  {
-    title: "Mastering UI/UX Design: Key Principles for Success",
-    category: "Resources",
-    date: "Mar 30, 2025",
-    pinned: false,
-    image: "https://framerusercontent.com/images/9HduiIXX5eSq1WREpvO4qCnKM.jpeg",
-    description:
-      "Foundational UI/UX principles for seamless, enjoyable, and user-centered digital experiences.",
-  },
-  {
-    title: "Balancing Creativity and Functionality in Design",
-    category: "Insights",
-    date: "Apr 5, 2025",
-    pinned: false,
-    image: "https://framerusercontent.com/images/7RrI1CE0NHr8L8o3ZXGWxQDFQc.jpeg",
-    description:
-      "How to create visually expressive designs that stay practical, accessible, and easy to use.",
-  },
-];
+
+
 
 function MetaRow({ items }) {
   return (
@@ -292,65 +160,7 @@ function Accordion({ items, variant = "accordion" }) {
   );
 }
 
-function FeaturedProjectCard({ project, index, total, scrollYProgress }) {
-  const [isDesktop, setIsDesktop] = useState(false);
 
-  useEffect(() => {
-    setIsDesktop(window.innerWidth > 810);
-    const handleResize = () => setIsDesktop(window.innerWidth > 810);
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
-  const targetScale = 1 - ((total - 1 - index) * 0.05);
-  const range = [index * (1 / total), 1];
-
-  const scaleTransform = useTransform(scrollYProgress, range, [1, targetScale]);
-  const overlayRange = [index * (1 / total), (index + 1) * (1 / total)];
-  const opacityTransform = useTransform(scrollYProgress, overlayRange, [0, 0.6]);
-
-  const scale = isDesktop ? scaleTransform : 1;
-  const opacity = isDesktop ? opacityTransform : 0;
-
-  return (
-    <div className="featured-card-wrapper">
-      <motion.article
-        className="featured-card"
-        style={isDesktop ? {
-          scale,
-          position: "sticky",
-          top: `calc(120px + ${index * 24}px)`,
-          transformOrigin: "top center",
-        } : {}}
-      >
-        <a className="featured-media" href="#contact" aria-label={`Discuss ${project.title}`} style={{ position: "relative", display: "block" }}>
-          <img src={project.image} alt={project.title} loading="lazy" />
-          {isDesktop && (
-            <motion.div
-              className="card-dimmer"
-              style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                backgroundColor: "rgba(0, 0, 0, 1)",
-                opacity: index < total - 1 ? opacity : 0,
-                pointerEvents: "none",
-                zIndex: 2,
-              }}
-            />
-          )}
-        </a>
-        <div className="featured-copy">
-          <MetaRow items={[project.category, project.year, project.client]} />
-          <h3>{project.title}</h3>
-          <p>{project.description}</p>
-        </div>
-      </motion.article>
-    </div>
-  );
-}
 
 const fadeUpProps = {
   initial: { opacity: 0, y: 40 },
@@ -513,7 +323,6 @@ export default function Home() {
   const [submitText, setSubmitText] = useState("Submit");
   const heroSceneRef = useRef(null);
   const portraitStageRef = useRef(null);
-  const projectsContainerRef = useRef(null);
   const theaterSectionRef = useRef(null);
   const mousePosRef = useRef({ x: 0, y: 0 });
   const [gyroPermission, setGyroPermission] = useState("pending");
@@ -561,14 +370,8 @@ export default function Home() {
     };
   };
 
-  const { scrollYProgress } = useScroll({
-    target: projectsContainerRef,
-    offset: ["start start", "end end"]
-  });
-  const featuredProjects = projects.filter((project) => project.featured).slice(0, 4);
-  const moreProjects = projects.filter((project) => !project.featured);
-  const pinnedPost = posts.find((post) => post.pinned) || posts[0];
-  const otherPosts = posts.filter((post) => post !== pinnedPost);
+
+
 
   // Services section reference
   const servicesSectionRef = useRef(null);
@@ -1505,81 +1308,11 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="projects" id="projects" aria-labelledby="projects-title">
-          <ScrollReveal variant="wipe">
-            <div className="section-heading-wide">
-              <h2 id="projects-title">Featured Projects</h2>
-              <p>
-                Selected work blending strategy with creativity, solving real problems through thoughtful
-                design and impactful storytelling.
-              </p>
-            </div>
-          </ScrollReveal>
-          <div className="featured-projects" ref={projectsContainerRef}>
-            {featuredProjects.map((project, index) => (
-              <FeaturedProjectCard
-                key={project.title}
-                project={project}
-                index={index}
-                total={featuredProjects.length}
-                scrollYProgress={scrollYProgress}
-              />
-            ))}
-          </div>
-          <div className="more-projects">
-            <ScrollReveal variant="wipe">
-              <div className="divider-title">
-                <h3>More Projects</h3>
-                <span></span>
-              </div>
-            </ScrollReveal>
-            <div className="project-grid">
-              {moreProjects.map((project, index) => (
-                <ScrollReveal key={project.title} delay={(index % 2) * 150} variant="fluid-flow">
-                  <article className="project-card">
-                    <img src={project.image} alt={project.title} loading="lazy" />
-                    <MetaRow items={[project.category, project.year]} />
-                    <h3>{project.title}</h3>
-                    <p>{project.description}</p>
-                  </article>
-                </ScrollReveal>
-              ))}
-            </div>
-          </div>
-        </section>
 
 
 
-        <section className="journal" id="journal" aria-labelledby="journal-title">
-          <ScrollReveal variant="wipe">
-            <div className="section-heading-wide">
-              <h2 id="journal-title">Design Insights &amp; Ideas</h2>
-              <p>Articles on design trends, creative process, workflow, typography, and brand systems.</p>
-            </div>
-          </ScrollReveal>
-          <div className="blog-layout">
-            <ScrollReveal delay={150} variant="glitch">
-              <article className="pinned-post">
-                <img src={pinnedPost.image} alt={pinnedPost.title} loading="lazy" />
-                <MetaRow items={[pinnedPost.category, pinnedPost.date, "Pinned"]} />
-                <h3>{pinnedPost.title}</h3>
-                <p>{pinnedPost.description}</p>
-              </article>
-            </ScrollReveal>
-            <div className="blog-grid">
-              {otherPosts.map((post, index) => (
-                <ScrollReveal key={post.title} delay={(index % 2) * 150} variant="fluid-flow">
-                  <article className="blog-card">
-                    <img src={post.image} alt={post.title} loading="lazy" />
-                    <MetaRow items={[post.category, post.date]} />
-                    <h3>{post.title}</h3>
-                    <p>{post.description}</p>
-                  </article>
-                </ScrollReveal>
-              ))}
-            </div>
-          </div>
-        </section>
+
+
 
         <section className="contact" id="contact" aria-labelledby="contact-title">
           <ScrollReveal variant="wipe">
