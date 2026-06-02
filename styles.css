@@ -1888,9 +1888,15 @@ section {
 }
 
 .theater-video {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+  width: 100vw;
+  height: 56.25vw; /* 16:9 ratio default */
+  min-width: 177.77vh;
+  min-height: 100vh;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border: none;
   display: block;
 }
 
@@ -2985,16 +2991,23 @@ section {
   .theater-video-wrapper {
     width: 100% !important;
     height: 100% !important;
-    position: relative !important;
+    position: absolute !important;
+    overflow: hidden !important;
     z-index: 5 !important;
   }
 
   .theater-video {
-    width: 100% !important;
-    height: 100% !important;
-    object-fit: cover !important; /* Ensures the video itself fills the box */
-    display: block !important;
+    width: 100vw !important;
+    height: 56.25vw !important;
+    min-width: 177.77vh !important;
+    min-height: 100vh !important;
+    position: absolute !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    border: none !important;
     opacity: 1 !important;
+    display: block !important;
   }
 
   .theater-bottom-fade {
