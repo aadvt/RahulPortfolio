@@ -1,9 +1,9 @@
 import "../styles.css";
 
 export const metadata = {
-  title: "Duncan Robert | Digital Designer",
+  title: "Rahul | Digital Designer",
   description:
-    "Duncan Robert, digital designer and Framer developer portfolio template rebuilt from Framer MCP content.",
+    "Rahul, digital designer and art director portfolio showcase featuring immersive WebGL effects and dynamic animations.",
 };
 
 export default function RootLayout({ children }) {

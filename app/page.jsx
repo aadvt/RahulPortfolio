@@ -2,9 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import Lenis from "lenis";
-import { motion, useScroll, useTransform, useSpring } from "framer-motion";
+import { motion, useScroll, useTransform, useSpring, useMotionTemplate } from "framer-motion";
 import anime from "animejs";
+import { gsap } from "gsap";
 import ShaderBackground from "../components/ShaderBackground";
+import CarouselShaderBackground from "../components/CarouselShaderBackground";
 import InfiniteGallery from "../components/InfiniteGallery";
 import TrustedFeedback from "../components/TrustedFeedback";
 
@@ -49,45 +51,36 @@ const services = [
 
 const mediaCarouselItems = [
   {
-    type: "image",
-    src: "/images/reel/reel-1.png",
-    alt: "Editorial portrait frame from Rahul media archive",
-    title: "PHOTO 01",
-    className: "media-card-large media-card-left"
-  },
-  {
-    type: "image",
-    src: "/images/IMG_5775.PNG",
-    alt: "Black and white portrait of Rahul",
-    title: "PORTRAIT",
-    className: "media-card-tall media-card-top"
+    type: "video",
+    src: "https://player.vimeo.com/video/1197831287?background=1&autoplay=1&loop=1&muted=1",
+    title: "PROJECT 01",
+    className: "media-card-video-landscape"
   },
   {
     type: "video",
-    src: "https://player.vimeo.com/video/1197780573?background=1&autoplay=1&loop=1&muted=1",
-    title: "VIDEO",
-    className: "media-card-wide media-card-center"
+    src: "https://player.vimeo.com/video/1197831230?background=1&autoplay=1&loop=1&muted=1",
+    title: "PROJECT 02",
+    className: "media-card-video-landscape",
+    rotate: 270
   },
   {
-    type: "image",
-    src: "/images/reel/reel-4.png",
-    alt: "Cinematic motion-blur city frame",
-    title: "PHOTO 02",
-    className: "media-card-medium media-card-right"
+    type: "video",
+    src: "https://player.vimeo.com/video/1197831232?background=1&autoplay=1&loop=1&muted=1",
+    title: "PROJECT 03",
+    className: "media-card-video-landscape",
+    rotate: 270
   },
   {
-    type: "image",
-    src: "/images/reel/reel-6.png",
-    alt: "Dark tactile detail frame",
-    title: "ARCHIVE",
-    className: "media-card-tall media-card-edge"
+    type: "video",
+    src: "https://player.vimeo.com/video/1197831233?background=1&autoplay=1&loop=1&muted=1",
+    title: "PROJECT 04",
+    className: "media-card-video-portrait"
   },
   {
-    type: "image",
-    src: "/images/IMG_6471.jpg",
-    alt: "Secondary portrait from Rahul archive",
-    title: "STILL",
-    className: "media-card-medium media-card-far"
+    type: "video",
+    src: "https://player.vimeo.com/video/1197831231?background=1&autoplay=1&loop=1&muted=1",
+    title: "PROJECT 05",
+    className: "media-card-video-landscape"
   }
 ];
 
@@ -322,6 +315,114 @@ function ScrollReveal({ children, delay = 0, variant = "wipe" }) {
 export default function Home() {
   const [submitText, setSubmitText] = useState("Submit");
   const heroSceneRef = useRef(null);
+  const lenisRef = useRef(null);
+  const isTransitioningRef = useRef(false);
+  const scrollCooldownRef = useRef(false);
+  const hasDisappearedRef = useRef(false);
+
+  const transitionToSection = (target, speedMultiplier = 1) => {
+    if (isTransitioningRef.current) return;
+    isTransitioningRef.current = true;
+
+    const lenis = lenisRef.current;
+    if (lenis) lenis.stop();
+    document.body.style.overflow = "hidden";
+
+    const overlay = document.querySelector(".page-wipe-overlay");
+    const heading = document.querySelector(".wipe-heading");
+    const sub = document.querySelector(".wipe-sub");
+    const image = document.querySelector(".page-wipe-image");
+
+    if (!overlay) {
+      if (lenis) {
+        lenis.scrollTo(target, { immediate: true });
+        lenis.start();
+      } else {
+        const el = typeof target === "string" ? document.querySelector(target) : null;
+        if (el) el.scrollIntoView();
+        else if (typeof target === "number") window.scrollTo(0, target);
+      }
+      document.body.style.overflow = "";
+      isTransitioningRef.current = false;
+      return;
+    }
+
+    overlay.classList.add("active");
+
+    const tl = gsap.timeline({
+      onComplete: () => {
+        overlay.classList.remove("active");
+        isTransitioningRef.current = false;
+        document.body.style.overflow = "";
+        if (lenis) lenis.start();
+
+        // Enable scroll cooldown for 1000ms to allow scroll values to settle down
+        scrollCooldownRef.current = true;
+        setTimeout(() => {
+          scrollCooldownRef.current = false;
+        }, 1000);
+      }
+    });
+
+    gsap.set(overlay, { clipPath: "inset(0% 100% 0% 0%)" });
+    gsap.set(heading, { opacity: 0, y: 40, scale: 0.95 });
+    gsap.set(sub, { opacity: 0, y: 20 });
+    gsap.set(image, { scale: 1.15, transformOrigin: "center center" });
+
+    tl.to(overlay, {
+      clipPath: "inset(0% 0% 0% 0%)",
+      duration: 0.85 * speedMultiplier,
+      ease: "power4.inOut",
+    })
+    .to(image, {
+      scale: 1.0,
+      duration: 1.6 * speedMultiplier,
+      ease: "power2.out",
+    }, 0)
+    .to(heading, {
+      opacity: 1,
+      y: 0,
+      scale: 1,
+      duration: 0.55 * speedMultiplier,
+      ease: "power4.out",
+    }, "-=0.35")
+    .to(sub, {
+      opacity: 1,
+      y: 0,
+      duration: 0.45 * speedMultiplier,
+      ease: "power3.out",
+    }, "-=0.25")
+    .add(() => {
+      let targetScroll = 0;
+      if (typeof target === "string") {
+        const el = document.querySelector(target);
+        if (el) {
+          targetScroll = el.getBoundingClientRect().top + window.scrollY;
+        }
+      } else if (typeof target === "number") {
+        targetScroll = target;
+      }
+
+      window.scrollTo(0, targetScroll);
+      if (lenis) {
+        lenis.scrollTo(targetScroll, { immediate: true });
+      }
+    }, "-=0.05")
+    .to({}, { duration: 0.45 * speedMultiplier })
+    .to([heading, sub], {
+      opacity: 0,
+      y: -20,
+      duration: 0.35 * speedMultiplier,
+      ease: "power3.in",
+    })
+    .to(overlay, {
+      clipPath: "inset(0% 0% 0% 100%)",
+      duration: 0.75 * speedMultiplier,
+      ease: "power4.inOut",
+    })
+    .set(overlay, { clipPath: "inset(0% 100% 0% 0%)" });
+  };
+
   const portraitStageRef = useRef(null);
   const theaterSectionRef = useRef(null);
   const mousePosRef = useRef({ x: 0, y: 0 });
@@ -402,7 +503,7 @@ export default function Home() {
     mass: 1
   });
 
-  const radius = 1200; // Use a constant radius for the math
+  const radius = 490; // Set radius for optimal mixed dynamic card spacing
 
   // Perfectly centered, viewing from the inside (concave arc)
   const mediaCarouselTiltX = -2; // slight look around
@@ -413,6 +514,9 @@ export default function Home() {
   const mediaCarouselZ = useTransform(mediaCarouselProgress, [0, 0.5, 1], [300, 500, 300]);
   const mediaNavOpacity = useTransform(mediaCarouselProgress, [0, 0.18, 0.72, 1], [1, 1, 1, 1]);
 
+  // Reactive background — counter-rotates at 40% carousel speed for visual depth
+  const bgConeAngle = useTransform(mediaCarouselRotation, (v) => v * -0.4);
+
   // Theater section references and scroll transforms
   const theaterRef = useRef(null);
   const iframeRef = useRef(null);
@@ -420,6 +524,19 @@ export default function Home() {
   const isPlayingRef = useRef(false);
   const [isMuted, setIsMuted] = useState(true);
   const [timecode, setTimecode] = useState("00:14:23:18");
+  const [activeModalItem, setActiveModalItem] = useState(null);
+
+  // Listen to Escape key to close the video modal
+  useEffect(() => {
+    if (!activeModalItem) return;
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        setActiveModalItem(null);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [activeModalItem]);
 
   const { scrollYProgress: theaterProgress } = useScroll({
     target: theaterRef,
@@ -528,6 +645,8 @@ export default function Home() {
       infinite: false,
     });
 
+    lenisRef.current = lenis;
+
     // Mouse tracking for cursor-following circle
     const handleMouseMove = (e) => {
       mousePosRef.current = { x: e.clientX, y: e.clientY };
@@ -605,6 +724,30 @@ export default function Home() {
     let lockImpactTime = 0;
 
     const updateHeroMotion = (scroll) => {
+      const stageEl = stage;
+      if (!stageEl) return;
+
+      const servicesBottomValTemp = sectionBounds.servicesBottom || (sectionBounds.theaterBottom || 0 + 1000);
+      const servicesStickyEndTemp = servicesBottomValTemp - (typeof window !== 'undefined' ? window.innerHeight : 800);
+
+      // Reset state at the absolute top
+      if (scroll < 10) {
+        hasDisappearedRef.current = false;
+      }
+
+      // If we scroll past the end of the services sticky track, mark as permanently disappeared
+      if (scroll >= servicesStickyEndTemp - 50) {
+        hasDisappearedRef.current = true;
+      }
+
+      // Permanent disappearance fail-safe
+      if (hasDisappearedRef.current) {
+        stageEl.style.display = "none";
+        stageEl.style.setProperty("--stage-opacity", "0");
+        return;
+      }
+
+      stageEl.style.display = "block";
       const mobileBreakpoint = 768;
       const isMobileView = window.innerWidth <= mobileBreakpoint;
       
@@ -622,8 +765,9 @@ export default function Home() {
       const servicesSettleEnd = theaterExitEnd; 
       
       const servicesBottomVal = servicesBottom || (theaterBottom + 1000);
-      const servicesExitStart = servicesBottomVal - 260;
-      const servicesDisappearEnd = servicesBottomVal + 280;
+      const servicesStickyEnd = servicesBottomVal - (typeof window !== 'undefined' ? window.innerHeight : 800);
+      const servicesExitStart = servicesStickyEnd - 400;
+      const servicesDisappearEnd = servicesStickyEnd - 50;
 
       let x = 0;
       let y = 0;
@@ -876,6 +1020,13 @@ export default function Home() {
           stage.style.left = "0";
           stage.style.zIndex = "100";
 
+          // Fail-safe: completely hide stage card if bloom is fully complete or scroll is past sticky end
+          if (vanishP >= 1.0 || scroll >= servicesStickyEnd - 50) {
+            opacity = 0;
+            isFixed = false;
+            stage.style.display = "none";
+          }
+
           // Drive the gallery bloom ripple reveal via data attribute
           const galleryEl = document.getElementById("services");
           if (galleryEl) {
@@ -985,6 +1136,8 @@ export default function Home() {
         stage.style.transform = `translate3d(calc(-50% + ${x}px), calc(-50% + ${y}px), 0) scale(${scale})`;
       }
 
+      stage.style.pointerEvents = opacity <= 0.05 ? "none" : "auto";
+
       // Text parallax
       const textParallaxP = Math.min(Math.max(scroll / (sectionBounds.theaterTop || window.innerHeight), 0), 1);
       scene.style.setProperty("--text-parallax", `${textParallaxP * 180}px`);
@@ -995,10 +1148,32 @@ export default function Home() {
       lastPhase = phase;
     };
 
+    let lastScroll = 0;
     let rafId = 0;
     const raf = (time) => {
       lenis.raf(time);
-      updateHeroMotion(Math.max(lenis.scroll || 0, window.scrollY || 0));
+      const currentScroll = Math.max(lenis.scroll || 0, window.scrollY || 0);
+      updateHeroMotion(currentScroll);
+
+      // Scroll bound triggers between #services and #media-carousel
+      const { servicesBottom } = sectionBounds;
+      if (servicesBottom && !isTransitioningRef.current && !scrollCooldownRef.current) {
+        const isScrollingDown = currentScroll > lastScroll;
+        const servicesThresholdDown = servicesBottom - window.innerHeight - 20;
+        const servicesThresholdUp = servicesBottom - 150;
+
+        // Downward trigger: from services to media-carousel
+        if (isScrollingDown && currentScroll > servicesThresholdDown && lastScroll <= servicesThresholdDown) {
+          transitionToSection('#media-carousel');
+        }
+        
+        // Upward trigger: from media-carousel to services
+        if (!isScrollingDown && currentScroll < servicesThresholdUp && lastScroll >= servicesThresholdUp && currentScroll > servicesBottom - window.innerHeight) {
+          transitionToSection(servicesBottom - window.innerHeight - 350);
+        }
+      }
+
+      lastScroll = currentScroll;
       rafId = window.requestAnimationFrame(raf);
     };
 
@@ -1007,6 +1182,7 @@ export default function Home() {
 
     return () => {
       lenis.destroy();
+      lenisRef.current = null;
       clearTimeout(timer);
       clearTimeout(timer2);
       window.removeEventListener("resize", handleResize);
@@ -1029,6 +1205,21 @@ export default function Home() {
 
   return (
     <div className="site-shell" onClick={() => { if (gyroPermission === "pending") requestGyro(); }}>
+      <header className="nav-shell" aria-label="Primary navigation">
+        <a className="avatar-chip" href="#home" aria-label="Rahul home" onClick={(e) => { e.preventDefault(); transitionToSection('#home'); }}>
+          <span className="avatar-dot"></span>
+          <span>Rahul</span>
+        </a>
+        <nav className="nav-links" aria-label="Sections">
+          <a href="#home" onClick={(e) => { e.preventDefault(); transitionToSection('#home'); }}>Home</a>
+          <a href="#services" onClick={(e) => { e.preventDefault(); transitionToSection('#services'); }}>Services</a>
+          <a href="#media-carousel" onClick={(e) => { e.preventDefault(); transitionToSection('#media-carousel'); }}>Projects</a>
+        </nav>
+        <button className="theme-toggle" type="button" aria-label="Toggle theme">
+          <span className="toggle-track"><span className="toggle-thumb"></span></span>
+        </button>
+        <a className="contact-link" href="#contact" onClick={(e) => { e.preventDefault(); transitionToSection('#contact'); }}>Contact</a>
+      </header>
       <main>
         <div className="hero-scene" id="home" aria-labelledby="hero-title" ref={heroSceneRef}>
           <ShaderBackground className="hero-bg" smokeColor="#E3142A" />
@@ -1244,6 +1435,48 @@ export default function Home() {
           aria-labelledby="media-carousel-title"
         >
           <div className="media-carousel-sticky">
+            {/* ─── Reactive animated background (WebGL2 Fluid Shader) ─── */}
+            <div aria-hidden="true" className="carousel-bg-layer">
+              <CarouselShaderBackground
+                className="carousel-webgl-bg"
+                rotationValue={mediaCarouselRotation}
+                smokeColor="#FC5050"
+              />
+            </div>
+
+            {/* ─── Brutalist UI chrome ─── */}
+            <div aria-hidden="true" className="carousel-chrome">
+              {/* Red top bar */}
+              <div className="carousel-chrome-bar carousel-chrome-bar-top" />
+              {/* Red bottom bar */}
+              <div className="carousel-chrome-bar carousel-chrome-bar-bottom" />
+              {/* Top-left registration cross */}
+              <div className="carousel-reg carousel-reg-tl"><span>+</span></div>
+              {/* Top-right registration cross */}
+              <div className="carousel-reg carousel-reg-tr"><span>+</span></div>
+              {/* Bottom-left registration cross */}
+              <div className="carousel-reg carousel-reg-bl"><span>+</span></div>
+              {/* Bottom-right registration cross */}
+              <div className="carousel-reg carousel-reg-br"><span>+</span></div>
+              {/* Side label */}
+              <div className="carousel-side-label">MEDIA FIELD — 001</div>
+              {/* Barcode */}
+              <div className="carousel-barcode">
+                {[6,3,5,2,7,4,3,6,2,5,4,7,3,6,2,4,5,3,7,4,6,2,5,3].map((h, i) => (
+                  <div key={i} className="barcode-bar" style={{ height: `${h * 3}px`, background: i % 5 === 0 ? "#FC5050" : "rgba(255,255,255,0.18)" }} />
+                ))}
+              </div>
+            </div>
+
+            {/* Ghost watermark — counter-rotates with the bg */}
+            <motion.div
+              aria-hidden="true"
+              className="carousel-watermark"
+              style={{ rotate: bgConeAngle }}
+            >
+              MEDIA
+            </motion.div>
+
             <motion.div 
               className="media-carousel-perspective" 
               aria-hidden="true"
@@ -1274,6 +1507,7 @@ export default function Home() {
                     >
                       <motion.figure
                         className={`media-carousel-card ${item.className}`}
+                        onClick={() => setActiveModalItem(item)}
                         style={{
                           // Setting z to NEGATIVE radius makes the elements form a concave room
                           // (facing inward toward the center instead of outward)
@@ -1288,7 +1522,8 @@ export default function Home() {
                           {item.type === "video" ? (
                             <iframe
                               src={item.src}
-                              style={{ width: "100%", height: "100%", border: "none", pointerEvents: "none" }}
+                              className={item.rotate ? `rotate-video-${item.rotate}` : ""}
+                              style={item.rotate ? { border: "none", pointerEvents: "none" } : { width: "100%", height: "100%", border: "none", pointerEvents: "none" }}
                               allow="autoplay; fullscreen"
                               title={item.title}
                             />
@@ -1419,7 +1654,7 @@ export default function Home() {
       </main>
 
       <footer className="footer">
-        <p>Duncan Robert</p>
+        <p>Rahul</p>
         <div>
           <a href="https://x.com/home">X</a>
           <a href="https://www.instagram.com/">Instagram</a>
@@ -1444,6 +1679,48 @@ export default function Home() {
           </filter>
         </defs>
       </svg>
+
+      {/* ─── Premium brutalist media modal popup ─── */}
+      {activeModalItem && (
+        <div 
+          className="media-modal-overlay" 
+          onClick={() => setActiveModalItem(null)}
+          aria-modal="true"
+          role="dialog"
+        >
+          <div 
+            className="media-modal-content"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button 
+              className="media-modal-close" 
+              onClick={() => setActiveModalItem(null)}
+            >
+              CLOSE [X]
+            </button>
+            <div className={activeModalItem.className.includes("landscape") ? "media-modal-player-landscape" : "media-modal-player-portrait"}>
+              <iframe
+                src={activeModalItem.src.replace("background=1", "").replace("muted=1", "").replace("&&", "&").replace("?&", "?")}
+                className={activeModalItem.rotate ? `rotate-video-${activeModalItem.rotate}` : ""}
+                style={activeModalItem.rotate ? { border: "none" } : { width: "100%", height: "100%", border: "none" }}
+                allow="autoplay; fullscreen"
+                title={activeModalItem.title}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Horizontal Page-Wipe Transition Overlay */}
+      <div className="page-wipe-overlay">
+        <div className="page-wipe-content">
+          <div className="page-wipe-image" />
+          <div className="page-wipe-text">
+            <h2 className="wipe-heading">RAHUL®</h2>
+            <p className="wipe-sub">DIGITAL PORTFOLIO SHOWCASE</p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
