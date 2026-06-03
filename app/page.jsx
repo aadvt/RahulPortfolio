@@ -10,6 +10,7 @@ import LivingNebulaShader from "../components/LivingNebulaShader";
 import InfiniteGallery from "../components/InfiniteGallery";
 import TrustedFeedback from "../components/TrustedFeedback";
 import { CircularGallery } from "../components/CircularGallery";
+import DualStackFeedback from "../components/DualStackFeedback";
 
 const services = [
   {
@@ -557,6 +558,48 @@ export default function Home() {
     target: theaterRef,
     offset: ["start start", "end end"]
   });
+
+  const footerRef = useRef(null);
+  const { scrollYProgress: footerScrollProgress } = useScroll({
+    target: footerRef,
+    offset: ["start end", "end end"]
+  });
+
+  const rawRadius = useTransform(footerScrollProgress, [0, 0.95], [0, 145]);
+  const springRadius = useSpring(rawRadius, {
+    stiffness: 45,
+    damping: 18,
+    mass: 0.6
+  });
+  const circleRadius = useTransform(springRadius, (v) => `${v}vmax`);
+
+  const [footerActive, setFooterActive] = useState(false);
+
+  useEffect(() => {
+    return footerScrollProgress.onChange((v) => {
+      if (v >= 0.85) {
+        setFooterActive(true);
+      } else {
+        setFooterActive(false);
+      }
+    });
+  }, [footerScrollProgress]);
+
+  const [localTime, setLocalTime] = useState("");
+  useEffect(() => {
+    const updateTime = () => {
+      const date = new Date();
+      const timeStr = date.toLocaleTimeString("en-US", { hour12: false });
+      const offset = -date.getTimezoneOffset();
+      const diffHours = Math.floor(Math.abs(offset) / 60);
+      const diffMins = Math.abs(offset) % 60;
+      const gmtStr = `GMT${offset >= 0 ? "+" : "-"}${String(diffHours).padStart(2, "0")}:${String(diffMins).padStart(2, "0")}`;
+      setLocalTime(`${timeStr} ${gmtStr}`);
+    };
+    updateTime();
+    const interval = setInterval(updateTime, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Full screen by default
   const theaterScale = 1;
@@ -1646,6 +1689,8 @@ export default function Home() {
 
         <TrustedFeedback />
 
+        <DualStackFeedback />
+
         {/* ═══════ Kodak Film Reel — Scroll-Pinned Unroll ═══════ */}
         <section className="film-reel-section" id="film-reel" ref={filmReelRef} aria-label="Film reel gallery">
           <div className="film-reel-sticky">
@@ -1697,69 +1742,63 @@ export default function Home() {
             </div>
           </div>
         </section>
-
-
-
-
-
-
-
-        <section className="contact" id="contact" aria-labelledby="contact-title">
-          <ScrollReveal variant="wipe">
-            <div className="contact-image">
-              <img
-                src="/images/IMG_5775.PNG"
-                alt="Rahul portrait"
-              />
-              <div className="circle-badge" aria-hidden="true">
-                <span>Let us</span>
-                <span>build</span>
-              </div>
-            </div>
-          </ScrollReveal>
-          <ScrollReveal delay={200} variant="glitch">
-            <div className="contact-copy">
-              <h2 id="contact-title">Let's work together</h2>
-              <p>Let us build something impactful together, whether it is your brand, your website, or your next big idea.</p>
-              <form className="contact-form" onSubmit={handleSubmit}>
-                <label>
-                  <span>Name</span>
-                  <input name="name" autoComplete="name" required />
-                </label>
-                <label>
-                  <span>Email</span>
-                  <input name="email" type="email" autoComplete="email" required />
-                </label>
-                <label>
-                  <span>Service Needed?</span>
-                  <select name="service" required defaultValue="">
-                    <option value="">Choose a service</option>
-                    <option>UI/UX Design</option>
-                    <option>Graphic Design</option>
-                    <option>Web Design</option>
-                    <option>Branding</option>
-                  </select>
-                </label>
-                <label>
-                  <span>What can I help you with?</span>
-                  <textarea name="message" rows="5"></textarea>
-                </label>
-                <button type="submit">{submitText}</button>
-              </form>
-            </div>
-          </ScrollReveal>
-        </section>
       </main>
 
-      <footer className="footer">
-        <p>Rahul</p>
-        <div>
-          <a href="https://x.com/home">X</a>
-          <a href="https://www.instagram.com/">Instagram</a>
-          <a href="https://www.behance.net/">Behance</a>
-          <a href="https://dribbble.com/">Dribbble</a>
-        </div>
-      </footer>
+      <motion.footer 
+        ref={footerRef}
+        id="contact"
+        className="footer-reveal-container"
+        style={{
+          clipPath: useMotionTemplate`circle(${circleRadius} at 50% 100%)`
+        }}
+      >
+        <motion.div
+          variants={{
+            hidden: { opacity: 0, y: 30 },
+            visible: { 
+              opacity: 1, 
+              y: 0,
+              transition: {
+                duration: 0.6,
+                delay: 0.25,
+                ease: "easeOut"
+              }
+            }
+          }}
+          initial="hidden"
+          animate={footerActive ? "visible" : "hidden"}
+          className="footer-content-wrapper"
+        >
+          <div className="footer-top">
+            <div className="footer-col">
+              <span className="footer-label">DESIGN & ART DIRECTION</span>
+              <span className="footer-value">AVAILABLE FOR FREELANCE & CONTRACT</span>
+            </div>
+            <div className="footer-col">
+              <span className="footer-label">LOCAL TIME</span>
+              <span className="footer-value">{localTime}</span>
+            </div>
+            <div className="footer-col align-right">
+              <span className="footer-label">SAY HELLO</span>
+              <a href="mailto:hello@rahul.design" className="footer-email">HELLO@RAHUL.DESIGN</a>
+            </div>
+          </div>
+
+          <div className="footer-title-wrap">
+            <h2 className="footer-title">RAHUL®</h2>
+          </div>
+
+          <div className="footer-bottom">
+            <p className="footer-copy">©2026 RAHUL. ALL RIGHTS RESERVED.</p>
+            <div className="footer-socials">
+              <a href="https://x.com/home" target="_blank" rel="noreferrer">TWITTER/X</a>
+              <a href="https://www.instagram.com/" target="_blank" rel="noreferrer">INSTAGRAM</a>
+              <a href="https://www.behance.net/" target="_blank" rel="noreferrer">BEHANCE</a>
+              <a href="https://dribbble.com/" target="_blank" rel="noreferrer">DRIBBBLE</a>
+            </div>
+          </div>
+        </motion.div>
+      </motion.footer>
 
       {/* SVG Filter to dynamically map the bright red in the custom portrait to #C74A57 */}
       <svg style={{ display: 'none' }}>

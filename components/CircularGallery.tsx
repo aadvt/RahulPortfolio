@@ -281,17 +281,26 @@ export const CircularGallery = ({
             >
               <div className="circular-gallery-media-wrapper">
                 {item.type === "video" ? (
-                  <iframe
-                    src={item.src}
-                    className={item.rotate ? `rotate-video-${item.rotate}` : ""}
-                    style={
-                      item.rotate
-                        ? { border: "none" }
-                        : { width: "100%", height: "100%", border: "none" }
-                    }
-                    allow="autoplay; fullscreen"
-                    title={item.title}
-                  />
+                  item.rotate ? (
+                    // Rotated portrait video: iframe is landscape-sized then rotated 90/270°
+                    // so we need a wrapper that clips the overflow
+                    <div className="rotated-video-container">
+                      <iframe
+                        src={item.src}
+                        className={`rotate-video-${item.rotate}`}
+                        style={{ border: "none" }}
+                        allow="autoplay; fullscreen"
+                        title={item.title}
+                      />
+                    </div>
+                  ) : (
+                    <iframe
+                      src={item.src}
+                      style={{ width: "100%", height: "100%", border: "none" }}
+                      allow="autoplay; fullscreen"
+                      title={item.title}
+                    />
+                  )
                 ) : (
                   <img src={item.src} alt={item.title} loading="lazy" />
                 )}
