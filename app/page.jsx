@@ -9,6 +9,7 @@ import ShaderBackground from "../components/ShaderBackground";
 import LivingNebulaShader from "../components/LivingNebulaShader";
 import InfiniteGallery from "../components/InfiniteGallery";
 import TrustedFeedback from "../components/TrustedFeedback";
+import { CircularGallery } from "../components/CircularGallery";
 
 const services = [
   {
@@ -503,7 +504,7 @@ export default function Home() {
     mass: 1
   });
 
-  const radius = 784; // Set radius for optimal mixed dynamic card spacing
+  const radius = isMobile ? 480 : 784; // Set radius for optimal mixed dynamic card spacing
 
   // Perfectly centered, viewing from the inside (concave arc)
   const mediaCarouselTiltX = -2; // slight look around
@@ -1635,6 +1636,13 @@ export default function Home() {
             </div>
           </div>
         </section>
+
+        <CircularGallery 
+          className="circular-gallery-section" 
+          bend={3} 
+          items={mediaCarouselItems}
+          onItemClick={setActiveModalItem}
+        />
 
         <TrustedFeedback />
 

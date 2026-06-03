@@ -3240,9 +3240,6 @@ section {
     height: 320vh;
   }
 
-  .media-carousel-track {
-    width: 380vw;
-  }
 
   .media-card-large {
     width: 624px;
@@ -3328,9 +3325,6 @@ section {
     perspective: 820px;
   }
 
-  .media-carousel-track {
-    width: 350vw;
-  }
 
   .media-card-large,
   .media-card-medium {
@@ -3346,6 +3340,14 @@ section {
   .media-card-wide {
     width: 340px;
     height: 240px;
+  }
+
+  .media-card-video-portrait {
+    width: 240px !important;
+  }
+
+  .media-card-video-landscape {
+    width: 310px !important;
   }
 
   .media-card-left {
@@ -3769,4 +3771,398 @@ section {
     transform: none; /* disable lift on touch screen viewports */
   }
 }
+
+/* ──────────────────────────────────────────────────────────────────────────
+   Fanned 3D Carousel Section (montopnetflix.fr style)
+   ────────────────────────────────────────────────────────────────────────── */
+
+.fanned-carousel-section {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  margin-left: calc(50% - 50vw);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at center, #a0dcff 40%, #8acbeb 100%);
+  z-index: 10;
+}
+
+.fanned-carousel-bg {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at center, #a0dcff 40%, #8acbeb 100%);
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* Soft light blue vignette overlay */
+.fanned-carousel-section::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at center, transparent 30%, rgba(138, 203, 235, 0.4) 100%);
+  z-index: 1;
+  pointer-events: none;
+}
+
+.fanned-carousel-container {
+  position: relative;
+  width: 100%;
+  max-width: 1200px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  padding-inline: 20px;
+}
+
+.fanned-title {
+  font-family: 'Anton', 'Archivo Black', sans-serif;
+  font-size: clamp(3.2rem, 7.8vw, 6.8rem);
+  color: #3b0126; /* Deep Netflix Burgundy/Raspberry */
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: -0.015em;
+  line-height: 0.9;
+  margin: 0;
+  white-space: nowrap;
+  user-select: none;
+  pointer-events: none;
+}
+
+.fanned-title-bg {
+  position: absolute;
+  top: 15%;
+  z-index: 1;
+  opacity: 0.95;
+}
+
+.fanned-title-fg {
+  position: absolute;
+  bottom: 25%;
+  z-index: 3;
+}
+
+.fanned-cards-track {
+  position: relative;
+  width: 100%;
+  height: 380px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  perspective: 1200px;
+  transform-style: preserve-3d;
+  cursor: grab;
+  touch-action: pan-y;
+}
+
+.fanned-cards-track:active {
+  cursor: grabbing;
+}
+
+.fanned-card {
+  width: 220px;
+  height: 310px;
+  border-radius: 14px;
+  overflow: hidden;
+  background-color: #000000;
+  box-shadow: 0 15px 35px rgba(59, 1, 38, 0.15), 0 5px 15px rgba(0,0,0,0.1);
+  border: 2px solid rgba(255, 255, 255, 0.12);
+  cursor: pointer;
+  transform-origin: center center;
+  will-change: transform, opacity;
+  transition: box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+.fanned-card-media-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: inherit;
+}
+
+.fanned-card-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.fanned-card-poster {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  z-index: 2;
+  user-select: none;
+  pointer-events: none;
+  transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.fanned-card.active:hover {
+  box-shadow: 0 20px 45px rgba(59, 1, 38, 0.35), 0 0 25px rgba(160, 220, 255, 0.45);
+  border-color: rgba(255, 255, 255, 0.45);
+}
+
+.fanned-nav-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(59, 1, 38, 0.12);
+  color: #3b0126;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.2rem;
+  font-weight: 300;
+  cursor: pointer;
+  z-index: 10;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.08);
+  line-height: 1;
+  padding-bottom: 6px;
+}
+
+.fanned-nav-btn:hover {
+  background-color: #3b0126;
+  color: #ffffff;
+  transform: translateY(-50%) scale(1.08);
+  box-shadow: 0 8px 20px rgba(59, 1, 38, 0.25);
+}
+
+.fanned-nav-btn-left {
+  left: 20px;
+}
+
+.fanned-nav-btn-right {
+  right: 20px;
+}
+
+.fanned-action-container {
+  position: absolute;
+  bottom: 8%;
+  z-index: 4;
+}
+
+.fanned-btn {
+  background-color: #3b0126;
+  color: #ffffff;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 900;
+  font-size: 1rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 16px 42px;
+  border-radius: 50px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 8px 24px rgba(59, 1, 38, 0.22);
+}
+
+.fanned-btn:hover {
+  background-color: #520235;
+  transform: translateY(-3px);
+  box-shadow: 0 12px 30px rgba(59, 1, 38, 0.32);
+}
+
+.fanned-btn:active {
+  transform: translateY(-1px);
+}
+
+/* Responsive Rules for Fanned Carousel */
+@media (max-width: 768px) {
+  .fanned-carousel-section {
+    height: 90vh;
+  }
+  .fanned-title {
+    font-size: clamp(2rem, 9.5vw, 3.2rem);
+  }
+  .fanned-title-bg {
+    top: 20%;
+  }
+  .fanned-title-fg {
+    bottom: 30%;
+  }
+  .fanned-cards-track {
+    height: 250px;
+    margin-top: -10px;
+  }
+  .fanned-card {
+    width: 130px;
+    height: 185px;
+    border-radius: 8px;
+  }
+  .fanned-btn {
+    padding: 12px 32px;
+    font-size: 0.85rem;
+  }
+  .fanned-action-container {
+    bottom: 12%;
+  }
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   WebGL Circular Gallery Section (ruixen.ui / 21st.dev)
+   ────────────────────────────────────────────────────────────────────────── */
+
+.circular-gallery-section {
+  position: relative;
+  width: 100vw;
+  height: 60vh;
+  margin-left: calc(50% - 50vw);
+  overflow: hidden;
+  background-color: #030303;
+  z-index: 10;
+  margin-top: 10vh;
+  margin-bottom: 10vh;
+  box-shadow: 
+    inset 0 30px 60px rgba(0, 0, 0, 0.9), 
+    inset 0 -30px 60px rgba(0, 0, 0, 0.9),
+    0 15px 40px rgba(0, 0, 0, 0.5);
+}
+
+@media (max-width: 768px) {
+  .circular-gallery-section {
+    height: 40vh;
+    margin-top: 5vh;
+    margin-bottom: 5vh;
+  }
+}
+
+.circular-gallery-track {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform-style: preserve-3d;
+  perspective: 1000px;
+}
+
+.circular-gallery-card {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  height: 38vh;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
+  background-color: #000;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transform-origin: center center;
+  will-change: transform;
+  cursor: grab;
+  user-select: none;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.circular-gallery-card:active {
+  cursor: grabbing;
+}
+
+.circular-gallery-card:hover {
+  border-color: var(--accent);
+  box-shadow: 0 20px 45px rgba(252, 80, 80, 0.25);
+}
+
+.circular-gallery-card.landscape {
+  width: calc(38vh * 1.7778);
+}
+
+.circular-gallery-card.portrait {
+  width: calc(38vh * 0.5625);
+}
+
+.circular-gallery-media-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: #000;
+}
+
+.circular-gallery-media-wrapper iframe,
+.circular-gallery-media-wrapper img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+}
+
+.circular-gallery-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  background: linear-gradient(to bottom, transparent 60%, rgba(0, 0, 0, 0.8) 100%);
+  display: flex;
+  align-items: flex-end;
+  padding: 18px 24px;
+  pointer-events: auto;
+}
+
+.circular-gallery-label {
+  font-family: var(--display);
+  font-size: clamp(14px, 2.2vh, 22px);
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0;
+  pointer-events: none;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.rotate-video-270 {
+  transform: rotate(270deg) !important;
+  width: 177.78% !important;
+  height: 56.25% !important;
+  position: absolute;
+  top: 21.875% !important;
+  left: -38.89% !important;
+}
+
+.rotate-video-90 {
+  transform: rotate(90deg) !important;
+  width: 177.78% !important;
+  height: 56.25% !important;
+  position: absolute;
+  top: 21.875% !important;
+  left: -38.89% !important;
+}
+
+@media (max-width: 768px) {
+  .circular-gallery-card {
+    height: 26vh;
+    border-radius: 8px;
+  }
+  .circular-gallery-card.landscape {
+    width: calc(26vh * 1.7778);
+  }
+  .circular-gallery-card.portrait {
+    width: calc(26vh * 0.5625);
+  }
+  .circular-gallery-overlay {
+    padding: 10px 14px;
+  }
+  .circular-gallery-label {
+    font-size: 13px;
+  }
+}
+
 
