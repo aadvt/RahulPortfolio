@@ -1419,10 +1419,86 @@ export default function Home() {
               falloff={{ near: 0.8, far: 14 }}
               className="infinite-gallery-canvas"
             />
-            <div className="gallery-overlay-text">
-              <h2 className="gallery-quote">
-                <span className="italic-text">Placeholder</span> statement goes here
-              </h2>
+            <div className="gallery-brutalist-ui" aria-label="Statement">
+              <svg
+                className="gallery-worn-filters"
+                aria-hidden="true"
+                focusable="false"
+                width="0"
+                height="0"
+              >
+                <defs>
+                  <filter
+                    id="gallery-worn-heavy"
+                    x="-8%"
+                    y="-8%"
+                    width="116%"
+                    height="116%"
+                    colorInterpolationFilters="sRGB"
+                  >
+                    <feTurbulence
+                      type="fractalNoise"
+                      baseFrequency="0.07 0.11"
+                      numOctaves="3"
+                      seed="8"
+                      result="noise"
+                    />
+                    <feDisplacementMap
+                      in="SourceGraphic"
+                      in2="noise"
+                      scale="2.4"
+                      xChannelSelector="R"
+                      yChannelSelector="G"
+                    />
+                  </filter>
+                  <filter
+                    id="gallery-worn-light"
+                    x="-6%"
+                    y="-6%"
+                    width="112%"
+                    height="112%"
+                    colorInterpolationFilters="sRGB"
+                  >
+                    <feTurbulence
+                      type="fractalNoise"
+                      baseFrequency="0.12 0.18"
+                      numOctaves="2"
+                      seed="3"
+                      result="noise"
+                    />
+                    <feDisplacementMap
+                      in="SourceGraphic"
+                      in2="noise"
+                      scale="0.9"
+                      xChannelSelector="R"
+                      yChannelSelector="G"
+                    />
+                  </filter>
+                </defs>
+              </svg>
+              <p className="gallery-brutalist-meta gallery-brutalist-meta--left gallery-brutalist-worn gallery-brutalist-worn--light">
+                Powered by God
+              </p>
+              <p className="gallery-brutalist-meta gallery-brutalist-meta--right gallery-brutalist-worn gallery-brutalist-worn--light">
+                Art with purpose
+              </p>
+              <div className="gallery-overlay-text">
+                <h2 className="gallery-quote gallery-brutalist-worn gallery-brutalist-worn--heavy">
+                  <span className="gallery-quote-line">I only fear god.</span>
+                  <span className="gallery-quote-line">The rest of them</span>
+                  <span className="gallery-quote-line">bleed like me.</span>
+                </h2>
+              </div>
+              <div className="gallery-brutalist-footer gallery-brutalist-worn gallery-brutalist-worn--light">
+                <span className="gallery-brutalist-star" aria-hidden="true">
+                  ★
+                </span>
+                <p className="gallery-brutalist-credit">
+                  <span className="gallery-brutalist-credit-name">
+                    @idosomethinguseless
+                  </span>
+                </p>
+              </div>
             </div>
             <div className="services-card-landing" aria-hidden="true" />
           </div>
