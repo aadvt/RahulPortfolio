@@ -6,7 +6,7 @@ import { motion, useScroll, useTransform, useSpring, useMotionTemplate } from "f
 import anime from "animejs";
 import { gsap } from "gsap";
 import ShaderBackground from "../components/ShaderBackground";
-import CarouselShaderBackground from "../components/CarouselShaderBackground";
+import LivingNebulaShader from "../components/LivingNebulaShader";
 import InfiniteGallery from "../components/InfiniteGallery";
 import TrustedFeedback from "../components/TrustedFeedback";
 
@@ -503,7 +503,7 @@ export default function Home() {
     mass: 1
   });
 
-  const radius = 490; // Set radius for optimal mixed dynamic card spacing
+  const radius = 784; // Set radius for optimal mixed dynamic card spacing
 
   // Perfectly centered, viewing from the inside (concave arc)
   const mediaCarouselTiltX = -2; // slight look around
@@ -525,6 +525,20 @@ export default function Home() {
   const [isMuted, setIsMuted] = useState(true);
   const [timecode, setTimecode] = useState("00:14:23:18");
   const [activeModalItem, setActiveModalItem] = useState(null);
+  const activeModalItemRef = useRef(null);
+
+  // Sync activeModalItem to ref to avoid stale closures in RAF loop and toggle Lenis scroll
+  useEffect(() => {
+    activeModalItemRef.current = activeModalItem;
+    const lenis = lenisRef.current;
+    if (lenis) {
+      if (activeModalItem) {
+        lenis.stop();
+      } else {
+        lenis.start();
+      }
+    }
+  }, [activeModalItem]);
 
   // Listen to Escape key to close the video modal
   useEffect(() => {
@@ -1157,7 +1171,7 @@ export default function Home() {
 
       // Scroll bound triggers between #services and #media-carousel
       const { servicesBottom } = sectionBounds;
-      if (servicesBottom && !isTransitioningRef.current && !scrollCooldownRef.current) {
+      if (servicesBottom && !isTransitioningRef.current && !scrollCooldownRef.current && !activeModalItemRef.current) {
         const isScrollingDown = currentScroll > lastScroll;
         const servicesThresholdDown = servicesBottom - window.innerHeight - 20;
         const servicesThresholdUp = servicesBottom - 150;
@@ -1513,10 +1527,9 @@ export default function Home() {
           <div className="media-carousel-sticky">
             {/* ─── Reactive animated background (WebGL2 Fluid Shader) ─── */}
             <div aria-hidden="true" className="carousel-bg-layer">
-              <CarouselShaderBackground
+              <LivingNebulaShader
                 className="carousel-webgl-bg"
                 rotationValue={mediaCarouselRotation}
-                smokeColor="#FC5050"
               />
             </div>
 
@@ -1592,6 +1605,7 @@ export default function Home() {
                           y: "-50%",
                           transformStyle: "preserve-3d",
                           backfaceVisibility: "hidden",
+                          cursor: "pointer",
                         }}
                       >
                         <div className="media-carousel-frame">
