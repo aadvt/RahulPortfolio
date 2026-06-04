@@ -327,8 +327,8 @@ export default function FullscreenVideoShowcase({
       if (!container) return;
       const rect = container.getBoundingClientRect();
 
-      // Check if the container is currently active and stuck in view
-      const isSticky = rect.top <= 10 && rect.bottom >= window.innerHeight - 10;
+      // Check if the container is currently active and stuck in view (permissive check)
+      const isSticky = rect.top <= 50 && rect.bottom >= window.innerHeight - 50;
       if (!isSticky) return;
 
       const n = itemsRef.current.length;
@@ -362,7 +362,7 @@ export default function FullscreenVideoShowcase({
   // ── Touch swipe snap ──────────────────────────────────────────────────────
   useEffect(() => {
     let touchStartY = 0;
-    const SWIPE_THRESHOLD = 40;
+    const SWIPE_THRESHOLD = 20; // More sensitive swipe on mobile
     const COOLDOWN = 600;
 
     const onTouchStart = (e: TouchEvent) => {
@@ -370,11 +370,17 @@ export default function FullscreenVideoShowcase({
     };
 
     const onTouchMove = (e: TouchEvent) => {
+      if (isSnappingRef.current) {
+        if (e.cancelable) e.preventDefault();
+        return; // Lock scrolling completely during transition
+      }
+
       const container = containerRef.current;
       if (!container) return;
       const rect = container.getBoundingClientRect();
 
-      const isSticky = rect.top <= 10 && rect.bottom >= window.innerHeight - 10;
+      // Permissive sticky check to handle address bar hiding/showing
+      const isSticky = rect.top <= 50 && rect.bottom >= window.innerHeight - 50;
       if (!isSticky) return;
 
       const deltaY = touchStartY - e.touches[0].clientY;
@@ -389,8 +395,6 @@ export default function FullscreenVideoShowcase({
       }
 
       if (e.cancelable) e.preventDefault();
-
-      if (isSnappingRef.current) return;
 
       if (Math.abs(deltaY) >= SWIPE_THRESHOLD) {
         const nextIdx = activeIndexRef.current + dir;
