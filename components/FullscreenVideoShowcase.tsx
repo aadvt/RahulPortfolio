@@ -145,7 +145,7 @@ export default function FullscreenVideoShowcase({
                 onClick={() => onItemClick && onItemClick(currentItem)}
               >
                 <div className="fvs-video-wrapper">
-                  {currentItem.type === "video" && !isMobile ? (
+                  {currentItem.type === "video" ? (
                     <iframe
                       src={currentItem.src}
                       className={currentItem.rotate ? `rotate-video-${currentItem.rotate}` : ""}
@@ -160,17 +160,6 @@ export default function FullscreenVideoShowcase({
                       alt={currentItem.alt || currentItem.title}
                       className="fvs-image-fallback"
                     />
-                  )}
-
-                  {/* Play icon overlay on mobile for interactive clarity */}
-                  {isMobile && currentItem.type === "video" && (
-                    <div className="fvs-play-btn-overlay">
-                      <div className="fvs-play-btn-circle">
-                        <svg viewBox="0 0 24 24" width="28" height="28" fill="#ffffff" style={{ marginLeft: "2px" }}>
-                          <path d="M8 5v14l11-7z" />
-                        </svg>
-                      </div>
-                    </div>
                   )}
 
                   {/* Subtle dark overlay for text readability */}
