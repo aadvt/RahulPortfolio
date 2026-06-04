@@ -102,7 +102,8 @@ class Renderer {
 
   updateScale() {
     if (!this.gl) return;
-    const dpr = Math.max(1, window.devicePixelRatio);
+    const isMobile = window.innerWidth <= 768;
+    const dpr = isMobile ? 1.0 : Math.min(1.5, window.devicePixelRatio || 1);
     const { innerWidth: width, innerHeight: height } = window;
     this.canvas.width = width * dpr;
     this.canvas.height = height * dpr;

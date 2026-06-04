@@ -6,9 +6,8 @@ import { motion, useScroll, useTransform, useSpring, useMotionTemplate } from "f
 import anime from "animejs";
 import { gsap } from "gsap";
 import ShaderBackground from "../components/ShaderBackground";
-import LivingNebulaShader from "../components/LivingNebulaShader";
 import InfiniteGallery from "../components/InfiniteGallery";
-import { CircularGallery } from "../components/CircularGallery";
+import FullscreenVideoShowcase from "../components/FullscreenVideoShowcase";
 import DualStackFeedback from "../components/DualStackFeedback";
 
 const services = [
@@ -490,33 +489,7 @@ export default function Home() {
   const canisterRotate = useTransform(filmReelProgress, [0, 1], [0, 720]);
 
   // Meech-inspired spinning 3D carousel for mixed photo and video media.
-  const mediaCarouselRef = useRef(null);
-  const { scrollYProgress: mediaCarouselProgress } = useScroll({
-    target: mediaCarouselRef,
-    offset: ["start start", "end end"]
-  });
-  
-  // Fixed 3D Carousel (Merry-Go-Round) logic
-  const mediaCarouselRotationBase = useTransform(mediaCarouselProgress, [0, 1], [0, -360]);
-  const mediaCarouselRotation = useSpring(mediaCarouselRotationBase, {
-    stiffness: 30,
-    damping: 20,
-    mass: 1
-  });
-
-  const radius = isMobile ? 480 : 784; // Set radius for optimal mixed dynamic card spacing
-
-  // Perfectly centered, viewing from the inside (concave arc)
-  const mediaCarouselTiltX = -2; // slight look around
-  const mediaCarouselTiltZ = useTransform(mediaCarouselProgress, [0, 0.5, 1], [-1, 1, -1]);
-  
-  // Track is positioned so you are "inside" looking out at the inner wall
-  // Positive Z brings the center point right to the camera
-  const mediaCarouselZ = useTransform(mediaCarouselProgress, [0, 0.5, 1], [300, 500, 300]);
-  const mediaNavOpacity = useTransform(mediaCarouselProgress, [0, 0.18, 0.72, 1], [1, 1, 1, 1]);
-
-  // Reactive background — counter-rotates at 40% carousel speed for visual depth
-  const bgConeAngle = useTransform(mediaCarouselRotation, (v) => v * -0.4);
+  // Fullscreen video showcase references and layout config
 
   // Theater section references and scroll transforms
   const theaterRef = useRef(null);
@@ -1262,21 +1235,6 @@ export default function Home() {
 
   return (
     <div className="site-shell" onClick={() => { if (gyroPermission === "pending") requestGyro(); }}>
-      <header className="nav-shell" aria-label="Primary navigation">
-        <a className="avatar-chip" href="#home" aria-label="Rahul home" onClick={(e) => { e.preventDefault(); transitionToSection('#home'); }}>
-          <span className="avatar-dot"></span>
-          <span>Rahul</span>
-        </a>
-        <nav className="nav-links" aria-label="Sections">
-          <a href="#home" onClick={(e) => { e.preventDefault(); transitionToSection('#home'); }}>Home</a>
-          <a href="#services" onClick={(e) => { e.preventDefault(); transitionToSection('#services'); }}>Services</a>
-          <a href="#media-carousel" onClick={(e) => { e.preventDefault(); transitionToSection('#media-carousel'); }}>Projects</a>
-        </nav>
-        <button className="theme-toggle" type="button" aria-label="Toggle theme">
-          <span className="toggle-track"><span className="toggle-thumb"></span></span>
-        </button>
-        <a className="contact-link" href="#contact" onClick={(e) => { e.preventDefault(); transitionToSection('#contact'); }}>Contact</a>
-      </header>
       <main>
         <div className="hero-scene" id="home" aria-labelledby="hero-title" ref={heroSceneRef}>
           <ShaderBackground className="hero-bg" smokeColor="#E3142A" />
@@ -1561,128 +1519,9 @@ export default function Home() {
           </div>
         </section>
 
-        <section
-          className="media-carousel-section"
-          id="media-carousel"
-          ref={mediaCarouselRef}
-          aria-labelledby="media-carousel-title"
-        >
-          <div className="media-carousel-sticky">
-            {/* ─── Reactive animated background (WebGL2 Fluid Shader) ─── */}
-            <div aria-hidden="true" className="carousel-bg-layer">
-              <LivingNebulaShader
-                className="carousel-webgl-bg"
-                rotationValue={mediaCarouselRotation}
-              />
-            </div>
-
-            {/* ─── Brutalist UI chrome ─── */}
-            <div aria-hidden="true" className="carousel-chrome">
-              {/* Red top bar */}
-              <div className="carousel-chrome-bar carousel-chrome-bar-top" />
-              {/* Red bottom bar */}
-              <div className="carousel-chrome-bar carousel-chrome-bar-bottom" />
-              {/* Top-left registration cross */}
-              <div className="carousel-reg carousel-reg-tl"><span>+</span></div>
-              {/* Top-right registration cross */}
-              <div className="carousel-reg carousel-reg-tr"><span>+</span></div>
-              {/* Bottom-left registration cross */}
-              <div className="carousel-reg carousel-reg-bl"><span>+</span></div>
-              {/* Bottom-right registration cross */}
-              <div className="carousel-reg carousel-reg-br"><span>+</span></div>
-              {/* Side label */}
-              <div className="carousel-side-label">MEDIA FIELD — 001</div>
-              {/* Barcode */}
-              <div className="carousel-barcode">
-                {[6,3,5,2,7,4,3,6,2,5,4,7,3,6,2,4,5,3,7,4,6,2,5,3].map((h, i) => (
-                  <div key={i} className="barcode-bar" style={{ height: `${h * 3}px`, background: i % 5 === 0 ? "#FC5050" : "rgba(255,255,255,0.18)" }} />
-                ))}
-              </div>
-            </div>
-
-            {/* Ghost watermark — counter-rotates with the bg */}
-            <motion.div
-              aria-hidden="true"
-              className="carousel-watermark"
-              style={{ rotate: bgConeAngle }}
-            >
-              MEDIA
-            </motion.div>
-
-            <motion.div 
-              className="media-carousel-perspective" 
-              aria-hidden="true"
-              style={{ perspective: "1500px", perspectiveOrigin: "50% 50%" }}
-            >
-              <motion.div
-                className="media-carousel-track"
-                style={{ 
-                  rotateY: mediaCarouselRotation,
-                  rotateX: mediaCarouselTiltX,
-                  rotateZ: mediaCarouselTiltZ,
-                  z: mediaCarouselZ,
-                  transformStyle: "preserve-3d",
-                }}
-              >
-                {mediaCarouselItems.map((item, index) => {
-                  const total = mediaCarouselItems.length;
-                  const angle = (index / total) * 360;
-                  
-                  return (
-                    <motion.div
-                      key={`${item.title}-${index}`}
-                      className="media-carousel-card-wrapper"
-                      style={{
-                        rotateY: angle,
-                        transformStyle: "preserve-3d"
-                      }}
-                    >
-                      <motion.figure
-                        className={`media-carousel-card ${item.className}`}
-                        onClick={() => setActiveModalItem(item)}
-                        style={{
-                          // Setting z to NEGATIVE radius makes the elements form a concave room
-                          // (facing inward toward the center instead of outward)
-                          z: -radius,
-                          x: "-50%",
-                          y: "-50%",
-                          transformStyle: "preserve-3d",
-                          backfaceVisibility: "hidden",
-                          cursor: "pointer",
-                        }}
-                      >
-                        <div className="media-carousel-frame">
-                          {item.type === "video" ? (
-                            <iframe
-                              src={item.src}
-                              className={item.rotate ? `rotate-video-${item.rotate}` : ""}
-                              style={item.rotate ? { border: "none", pointerEvents: "none" } : { width: "100%", height: "100%", border: "none", pointerEvents: "none" }}
-                              allow="autoplay; fullscreen"
-                              title={item.title}
-                            />
-                          ) : (
-                            <img src={item.src} alt={item.alt} loading="lazy" />
-                          )}
-                        </div>
-                        <figcaption>{item.title}</figcaption>
-                      </motion.figure>
-                    </motion.div>
-                  );
-                })}
-              </motion.div>
-            </motion.div>
-
-            <div className="media-carousel-footer">
-              <span>SCROLL TO ORBIT</span>
-              <span id="media-carousel-title">MEDIA FIELD</span>
-            </div>
-          </div>
-        </section>
-
-        <CircularGallery 
-          className="circular-gallery-section" 
-          bend={3} 
+        <FullscreenVideoShowcase
           items={mediaCarouselItems}
+          lenisRef={lenisRef}
           onItemClick={setActiveModalItem}
         />
 

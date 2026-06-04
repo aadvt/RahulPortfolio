@@ -4933,9 +4933,310 @@ section {
   }
 }
 
-@media (max-width: 480px) {
-  .dsf-image-stack,
-  .dsf-text-stack {
-    height: 30vh;
+
+/* ──────────────────────────────────────────────────────────────────────────
+   5. FULLSCREEN VIDEO SHOWCASE (Let It Rip Pictures Style)
+   ────────────────────────────────────────────────────────────────────────── */
+
+.fvs-section {
+  position: relative;
+  overflow: visible;
+  background-color: #000000;
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+}
+
+.fvs-sticky {
+  position: sticky;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: #000;
+  isolation: isolate;
+}
+
+/* Photocopy grain texture overlay */
+.fvs-grain-overlay {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.08'/%3E%3C/svg%3E");
+  mix-blend-mode: screen;
+  opacity: 0.55;
+}
+
+.fvs-viewport {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+.fvs-slide-container {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.fvs-video-wrapper {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #000;
+}
+
+/* Vimeo cover sizing logic */
+.fvs-video-wrapper iframe {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100vw;
+  height: 56.25vw; /* 16:9 aspect */
+  min-height: 100vh;
+  min-width: 177.78vh; /* 16:9 aspect */
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  border: none;
+  filter: brightness(0.7) contrast(1.05);
+}
+
+.fvs-image-fallback {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: brightness(0.6) contrast(1.05);
+}
+
+/* Gradient dark overlay for title legibility */
+.fvs-dark-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.4) 0%,
+    rgba(0, 0, 0, 0.25) 50%,
+    rgba(0, 0, 0, 0.5) 100%
+  );
+  pointer-events: none;
+}
+
+/* Content overlays */
+.fvs-content-layer {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: 0 40px;
+  max-width: 1200px;
+  text-align: center;
+}
+
+.fvs-title {
+  font-family: var(--display);
+  font-size: clamp(2.2rem, 7.5vw, 6rem);
+  font-weight: 900;
+  text-transform: uppercase;
+  color: #ffffff;
+  letter-spacing: -0.04em;
+  line-height: 0.85;
+  text-shadow: 0 4px 24px rgba(0, 0, 0, 0.7);
+  margin: 0;
+}
+
+.fvs-scroll-hint {
+  font-family: var(--body);
+  font-size: 10px;
+  font-weight: 900;
+  color: var(--accent);
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  padding: 5px 12px;
+  border: 1px solid var(--accent);
+  background: rgba(0, 0, 0, 0.65);
+  box-shadow: 4px 4px 0px 0px var(--accent);
+}
+
+/* Floating Vertical Navigation */
+.fvs-nav-wrapper {
+  position: absolute;
+  right: clamp(18px, 4vw, 44px);
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 50;
+}
+
+.fvs-nav-container {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+  padding: 24px 10px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+}
+
+.fvs-nav-btn {
+  position: relative;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.6);
+  font-family: var(--body);
+  font-size: 10px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 260ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.fvs-nav-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+  border-color: #ffffff;
+  transform: scale(1.1);
+}
+
+.fvs-nav-btn.active {
+  background: var(--accent);
+  color: #ffffff;
+  border-color: var(--accent);
+  box-shadow: 0 0 16px var(--accent);
+  transform: scale(1.15);
+}
+
+/* Hover Preview Tooltip */
+.fvs-nav-tooltip {
+  position: absolute;
+  right: 50px;
+  top: 50%;
+  transform: translateY(-50%) translateX(-15px);
+  background: #0d0d0d;
+  border: 2px solid var(--accent);
+  box-shadow: 4px 4px 0 0 #000;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 260ms cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 100;
+}
+
+.fvs-nav-btn:hover .fvs-nav-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(-50%) translateX(0);
+}
+
+.fvs-nav-tooltip-thumb {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.fvs-nav-tooltip-text {
+  font-family: var(--body);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  color: #ffffff;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* Footer elements */
+.fvs-footer-info {
+  position: absolute;
+  left: clamp(24px, 3vw, 60px);
+  right: clamp(24px, 3vw, 60px);
+  bottom: clamp(20px, 2.5vh, 32px);
+  z-index: 4;
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  font-family: var(--body);
+  font-size: clamp(0.75rem, 0.9vw, 0.9rem);
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.5);
+  pointer-events: none;
+}
+
+.fvs-footer-left {
+  color: var(--accent);
+}
+
+/* Disable hover tooltips on touch devices */
+@media (hover: none) {
+  .fvs-nav-tooltip {
+    display: none !important;
   }
 }
+
+@media (max-width: 768px) {
+  .fvs-nav-wrapper {
+    right: 14px;
+  }
+  
+  .fvs-nav-container {
+    padding: 16px 6px;
+    gap: 10px;
+  }
+
+  .fvs-nav-btn {
+    width: 28px;
+    height: 28px;
+    font-size: 9px;
+  }
+}
+
+/* Play button overlay for mobile static posters */
+.fvs-play-btn-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 8;
+  pointer-events: none;
+}
+
+.fvs-play-btn-circle {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.7);
+  border: 2px solid var(--accent);
+  box-shadow: 0 0 20px rgba(252, 80, 80, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 200ms ease, background 200ms ease;
+}
+

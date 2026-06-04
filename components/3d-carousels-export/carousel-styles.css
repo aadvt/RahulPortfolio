@@ -1,0 +1,737 @@
+/* ==========================================================================
+   STANDALONE 3D CAROUSELS STYLESHEET
+   Includes: 3D Perspective Orbit Carousel, Circular Curved Gallery, and Modal.
+   ========================================================================== */
+
+/* Local variable fallbacks */
+.circular-gallery-section,
+.media-carousel-section,
+.media-modal-overlay {
+  --accent: #FC5050;
+  --display: "Anton", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --body: "Space Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   1. 3D PERSPECTIVE ORBIT CAROUSEL (MERRY-GO-ROUND)
+   ────────────────────────────────────────────────────────────────────────── */
+
+.media-carousel-section {
+  position: relative;
+  height: 400vh; /* Controlled by prop scrollSectionHeight */
+  background: #080808;
+  color: #ffffff;
+}
+
+.media-carousel-sticky {
+  position: sticky;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  margin-left: calc(50% - 50vw);
+  overflow: hidden;
+  background: #050505;
+  isolation: isolate;
+}
+
+/* WebGL fluid background container */
+.carousel-bg-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.carousel-webgl-bg {
+  width: 100%;
+  height: 100%;
+}
+
+/* Film grain / noise texture — raw print feel */
+.media-carousel-sticky::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.88' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.09'/%3E%3C/svg%3E");
+  mix-blend-mode: screen;
+  opacity: 0.6;
+}
+
+/* Brutalist red diagonal slash — top left */
+.media-carousel-sticky::after {
+  content: "";
+  position: absolute;
+  top: -120px;
+  left: -80px;
+  width: 360px;
+  height: 6px;
+  background: var(--accent);
+  transform: rotate(38deg);
+  transform-origin: left center;
+  z-index: 1;
+  pointer-events: none;
+  box-shadow: 0 0 28px rgba(252, 80, 80, 0.45);
+}
+
+.media-carousel-perspective {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+  margin-top: 0;
+}
+
+.media-carousel-track {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 1px;
+  height: 1px;
+  transform-style: preserve-3d;
+  will-change: transform;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.media-carousel-card-wrapper {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform-style: preserve-3d;
+  width: 0;
+  height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  will-change: transform;
+}
+
+/* Card shell — brutalist sharp geometry */
+.media-carousel-card {
+  position: absolute;
+  margin: 0;
+  transform-style: preserve-3d;
+  will-change: transform;
+  pointer-events: auto;
+  top: 0;
+  left: 0;
+}
+
+/* Frame — raw industrial: thick border, harsh shadow, zero rounding */
+.media-carousel-frame {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #0d0d0d;
+  border: 3px solid #ffffff;
+  outline: 1px solid var(--accent);
+  outline-offset: 5px;
+  box-shadow:
+    0 0 0 1px rgba(252, 80, 80, 0.2),
+    8px 8px 0 0 var(--accent),
+    0 28px 56px rgba(0, 0, 0, 0.82),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  /* Clip sharp diagonal corner — top right */
+  clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 18px, 100% 100%, 0 100%);
+  transition: box-shadow 280ms ease, transform 280ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Cut-corner accent triangle — top right */
+.media-carousel-frame::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 0 32px 32px 0;
+  border-color: transparent var(--accent) transparent transparent;
+  z-index: 4;
+  pointer-events: none;
+}
+
+/* Scanline overlay — photocopy distortion */
+.media-carousel-frame::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(180deg,
+      transparent,
+      transparent 3px,
+      rgba(0, 0, 0, 0.07) 3px,
+      rgba(0, 0, 0, 0.07) 4px);
+  z-index: 3;
+  mix-blend-mode: multiply;
+}
+
+/* Images: desaturated + high contrast — editorial monochrome */
+.media-carousel-frame img,
+.media-carousel-frame video,
+.media-carousel-frame iframe {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  filter: contrast(1.05) brightness(0.95);
+  transition: filter 360ms ease, transform 700ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.media-carousel-frame iframe {
+  border: none;
+  pointer-events: none;
+}
+
+/* Hover: desaturation lifts, red tint bleeds in */
+.media-carousel-card:hover .media-carousel-frame {
+  box-shadow:
+    0 0 0 1px rgba(252, 80, 80, 0.5),
+    8px 8px 0 0 var(--accent),
+    0 28px 56px rgba(252, 80, 80, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.media-carousel-card:hover img,
+.media-carousel-card:hover video {
+  filter: contrast(1.0) brightness(1.0);
+  transform: scale(1.04);
+}
+
+/* Figcaption — brutalist stamp label */
+.media-carousel-card figcaption {
+  position: absolute;
+  left: 0;
+  bottom: -36px;
+  font-family: var(--body);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.26em;
+  color: var(--accent);
+  text-transform: uppercase;
+  padding: 3px 8px;
+  background: #000000;
+  border: 1px solid var(--accent);
+  white-space: nowrap;
+}
+
+/* Brutalist UI chrome elements */
+.carousel-chrome {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 4;
+}
+
+.carousel-chrome-bar {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: var(--accent);
+}
+
+.carousel-chrome-bar-top {
+  top: 15px;
+}
+
+.carousel-chrome-bar-bottom {
+  bottom: 15px;
+}
+
+.carousel-reg {
+  position: absolute;
+  font-family: var(--body);
+  font-size: 18px;
+  color: var(--accent);
+  line-height: 1;
+}
+
+.carousel-reg-tl { top: 25px; left: 25px; }
+.carousel-reg-tr { top: 25px; right: 25px; }
+.carousel-reg-bl { bottom: 25px; left: 25px; }
+.carousel-reg-br { bottom: 25px; right: 25px; }
+
+.carousel-side-label {
+  position: absolute;
+  left: 20px;
+  top: 50%;
+  transform: translateY(-50%) rotate(-90deg);
+  transform-origin: left center;
+  font-family: var(--body);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.carousel-barcode {
+  position: absolute;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.barcode-bar {
+  width: 24px;
+}
+
+/* Ghost watermark — counter-rotates with the bg */
+.carousel-watermark {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-family: var(--display);
+  font-size: 26vw;
+  font-weight: 900;
+  color: rgba(255, 255, 255, 0.02);
+  line-height: 0.8;
+  letter-spacing: -0.05em;
+  z-index: 1;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+/* Card Shape Configurations */
+.media-card-large {
+  width: clamp(576px, 49.6vw, 992px);
+  height: clamp(752px, 92.8vh, 1072px);
+}
+
+.media-card-tall {
+  width: clamp(400px, 32vw, 624px);
+  height: clamp(656px, 89.6vh, 976px);
+}
+
+.media-card-wide {
+  width: clamp(576px, 52.8vw, 1024px);
+  height: clamp(400px, 54.4vh, 672px);
+}
+
+.media-card-medium {
+  width: clamp(480px, 40vw, 800px);
+  height: clamp(496px, 68.8vh, 800px);
+}
+
+.media-card-video-portrait {
+  width: clamp(416px, 28.8vw, 592px);
+  aspect-ratio: 9 / 16;
+}
+
+.media-card-video-landscape {
+  width: clamp(640px, 44.8vw, 992px);
+  aspect-ratio: 16 / 9;
+}
+
+/* Rotated video classes for vertical videos embedded in landscape frames */
+.rotate-video-90 {
+  position: absolute;
+  top: 50% !important;
+  left: 50% !important;
+  width: 56.25% !important;
+  height: 177.78% !important;
+  transform: translate(-50%, -50%) rotate(90deg) !important;
+  transform-origin: center center;
+}
+
+.rotate-video-270 {
+  position: absolute;
+  top: 50% !important;
+  left: 50% !important;
+  width: 56.25% !important;
+  height: 177.78% !important;
+  transform: translate(-50%, -50%) rotate(270deg) !important;
+  transform-origin: center center;
+}
+
+.rotate-video-180 {
+  position: absolute;
+  top: 50% !important;
+  left: 50% !important;
+  width: 100% !important;
+  height: 100% !important;
+  transform: translate(-50%, -50%) rotate(180deg) !important;
+  transform-origin: center center;
+}
+
+/* Alternating red/white accent variant for every other card wrapper */
+.media-carousel-card-wrapper:nth-child(even) .media-carousel-frame {
+  border-color: var(--accent);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.2),
+    8px 8px 0 0 #ffffff,
+    0 28px 56px rgba(0, 0, 0, 0.82),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 18px), calc(100% - 18px) 100%, 0 100%);
+}
+
+.media-carousel-card-wrapper:nth-child(even) .media-carousel-frame::before {
+  /* White bottom-right corner instead of red top-right */
+  top: auto;
+  right: 0;
+  bottom: 0;
+  border-width: 32px 0 0 32px;
+  border-color: transparent transparent transparent #ffffff;
+}
+
+.media-carousel-card-wrapper:nth-child(even):hover .media-carousel-frame {
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.5),
+    8px 8px 0 0 #ffffff,
+    0 28px 56px rgba(255, 255, 255, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.media-carousel-card-wrapper:nth-child(even) figcaption {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+/* Footer layout */
+.media-carousel-footer {
+  position: absolute;
+  left: clamp(24px, 3vw, 60px);
+  right: clamp(24px, 3vw, 60px);
+  bottom: clamp(20px, 2.5vh, 32px);
+  z-index: 5;
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  font-family: var(--body);
+  font-size: clamp(0.8rem, 1vw, 1rem);
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.media-carousel-footer span:first-child {
+  color: var(--accent);
+  letter-spacing: 0.18em;
+}
+
+.media-carousel-footer span:last-child {
+  color: rgba(255, 255, 255, 0.38);
+}
+
+
+/* ──────────────────────────────────────────────────────────────────────────
+   2. WebGL CURVED CIRCULAR GALLERY (BENED SCI-FI SLIDER)
+   ────────────────────────────────────────────────────────────────────────── */
+
+.circular-gallery-section {
+  position: relative;
+  width: 100vw;
+  height: 60vh;
+  margin-left: calc(50% - 50vw);
+  overflow: hidden;
+  background-color: #030303;
+  z-index: 10;
+  margin-top: 10vh;
+  margin-bottom: 10vh;
+  box-shadow:
+    inset 0 30px 60px rgba(0, 0, 0, 0.9),
+    inset 0 -30px 60px rgba(0, 0, 0, 0.9),
+    0 15px 40px rgba(0, 0, 0, 0.5);
+}
+
+.circular-gallery-track {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform-style: preserve-3d;
+  perspective: 1000px;
+}
+
+.circular-gallery-card {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  height: 38vh;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
+  background-color: #000;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transform-origin: center center;
+  will-change: transform;
+  cursor: grab;
+  user-select: none;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.circular-gallery-card:active {
+  cursor: grabbing;
+}
+
+.circular-gallery-card:hover {
+  border-color: var(--accent);
+  box-shadow: 0 20px 45px rgba(252, 80, 80, 0.25);
+}
+
+.circular-gallery-card.landscape {
+  width: calc(38vh * 1.7778);
+}
+
+.circular-gallery-card.portrait {
+  width: calc(38vh * 0.5625);
+}
+
+.circular-gallery-media-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: #000;
+}
+
+.circular-gallery-media-wrapper iframe,
+.circular-gallery-media-wrapper img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+}
+
+.circular-gallery-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  background: linear-gradient(to bottom, transparent 60%, rgba(0, 0, 0, 0.8) 100%);
+  display: flex;
+  align-items: flex-end;
+  padding: 18px 24px;
+  pointer-events: auto;
+}
+
+.circular-gallery-label {
+  font-family: var(--display);
+  font-size: clamp(14px, 2.2vh, 22px);
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0;
+  pointer-events: none;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+/* Rotated video wrapper — clips the oversized rotated iframe */
+.rotated-video-container {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: #000;
+}
+
+.rotate-video-270 {
+  position: absolute;
+  width: 177.78%;
+  height: 56.25%;
+  top: 21.875%;
+  left: -38.89%;
+  transform: rotate(270deg);
+  transform-origin: center center;
+}
+
+.rotate-video-90 {
+  position: absolute;
+  width: 177.78%;
+  height: 56.25%;
+  top: 21.875%;
+  left: -38.89%;
+  transform: rotate(90deg);
+  transform-origin: center center;
+}
+
+
+/* ──────────────────────────────────────────────────────────────────────────
+   3. PREMIUM BRUTALIST MEDIA MODAL
+   ────────────────────────────────────────────────────────────────────────── */
+
+.media-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: rgba(0, 0, 0, 0.88);
+  backdrop-filter: blur(16px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 30px;
+  opacity: 0;
+  animation: modal-fade-in 240ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.media-modal-content {
+  position: relative;
+  background: #080808;
+  border: 3px solid #ffffff;
+  outline: 1px solid var(--accent);
+  outline-offset: 6px;
+  box-shadow:
+    0 0 42px rgba(252, 80, 80, 0.35),
+    0 40px 80px rgba(0, 0, 0, 0.95);
+  transform: scale(0.92);
+  animation: modal-scale-in 320ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  overflow: hidden;
+}
+
+.media-modal-player-landscape {
+  width: min(88vw, 960px);
+  aspect-ratio: 16 / 9;
+  position: relative;
+  overflow: hidden;
+}
+
+.media-modal-player-portrait {
+  width: min(84vw, 380px);
+  aspect-ratio: 9 / 16;
+  position: relative;
+  overflow: hidden;
+}
+
+.media-modal-close {
+  position: absolute;
+  top: clamp(-52px, -6.5vh, -40px);
+  right: 0;
+  font-family: var(--body);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  color: var(--accent);
+  background: #000000;
+  border: 1px solid var(--accent);
+  padding: 6px 14px;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: background 200ms ease, color 200ms ease, transform 150ms ease;
+}
+
+.media-modal-close:hover {
+  background: var(--accent);
+  color: #ffffff;
+  transform: translateY(-2px);
+}
+
+.media-modal-close:active {
+  transform: translateY(0);
+}
+
+@keyframes modal-fade-in {
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modal-scale-in {
+  to {
+    transform: scale(1);
+  }
+}
+
+
+/* ──────────────────────────────────────────────────────────────────────────
+   4. RESPONSIVE MEDIA QUERIES & OVERRIDES
+   ────────────────────────────────────────────────────────────────────────── */
+
+@media (max-width: 1024px) {
+  .media-carousel-section {
+    height: 320vh;
+  }
+
+  .media-card-large {
+    width: 624px;
+    height: 800px;
+  }
+
+  .media-card-tall {
+    width: 432px;
+    height: 704px;
+  }
+
+  .media-card-wide,
+  .media-card-medium {
+    width: 576px;
+    height: 480px;
+  }
+}
+
+@media (max-width: 768px) {
+  .media-carousel-section {
+    height: 280vh;
+  }
+
+  .media-carousel-perspective {
+    perspective: 820px;
+  }
+
+  .media-card-large,
+  .media-card-medium {
+    width: 340px;
+    height: 440px;
+  }
+
+  .media-card-tall {
+    width: 300px;
+    height: 480px;
+  }
+
+  .media-card-wide {
+    width: 340px;
+    height: 240px;
+  }
+
+  .media-card-video-portrait {
+    width: 240px !important;
+  }
+
+  .media-card-video-landscape {
+    width: 310px !important;
+  }
+
+  /* Circular Curved Gallery overrides */
+  .circular-gallery-section {
+    height: 40vh;
+    margin-top: 5vh;
+    margin-bottom: 5vh;
+  }
+
+  .circular-gallery-card {
+    height: 26vh;
+    border-radius: 8px;
+  }
+
+  .circular-gallery-card.landscape {
+    width: calc(26vh * 1.7778);
+  }
+
+  .circular-gallery-card.portrait {
+    width: calc(26vh * 0.5625);
+  }
+
+  .circular-gallery-overlay {
+    padding: 10px 14px;
+  }
+
+  .circular-gallery-label {
+    font-size: 13px;
+  }
+}

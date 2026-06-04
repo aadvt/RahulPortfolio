@@ -564,8 +564,10 @@ export default function InfiniteGallery({
 	},
 }: InfiniteGalleryProps) {
 	const [webglSupported, setWebglSupported] = useState(true);
+	const [isMobile, setIsMobile] = useState(false);
 
 	useEffect(() => {
+		setIsMobile(window.innerWidth <= 768);
 		// Check WebGL support
 		try {
 			const canvas = document.createElement('canvas');
@@ -591,14 +593,15 @@ export default function InfiniteGallery({
 		<div className={className} style={style}>
 			<Canvas
 				camera={{ position: [0, 0, 0], fov: 55 }}
-				gl={{ antialias: true, alpha: true }}
+				gl={{ antialias: !isMobile, alpha: true }}
+				dpr={isMobile ? 1.0 : [1, 1.5]}
 			>
 				<GalleryScene
 					images={images}
 					speed={speed}
-					visibleCount={visibleCount}
+					visibleCount={isMobile ? Math.min(6, visibleCount) : visibleCount}
 					fadeSettings={fadeSettings}
-					blurSettings={blurSettings}
+					blurSettings={isMobile ? { ...blurSettings, maxBlur: 0.0 } : blurSettings}
 				/>
 			</Canvas>
 		</div>
