@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { motion, useScroll, useTransform, useSpring } from "framer-motion";
+import { motion, useScroll, useTransform, useSpring, useMotionValueEvent, AnimatePresence, useInView } from "framer-motion";
 
 export interface VideoShowcaseItem {
   type?: "video" | "image";
@@ -19,137 +19,185 @@ interface FullscreenVideoShowcaseProps {
   onItemClick?: (item: VideoShowcaseItem) => void;
 }
 
-// ─── Wipe Slide ───────────────────────────────────────────────────────────────
-// Replicates letitrippictures.com:
-//  [Clipper] height 0→100vh  (overflow-hidden, anchored bottom)
-//    └─ [Inner] translateY 100vh→0  (counter-move so video stays fixed)
-//         └─ [Video]
-// Result: video is revealed from below by an expanding clip window — pure wipe.
-
-function WipeSlide({
-  item,
-  index,
-  totalItems,
-  scrollYProgress,
-  activeIndex,
-  onItemClick,
-}: {
+// ─── Fade Slide (Video/Image Layer) ──────────────────────────────────────────
+interface FadeSlideProps {
   item: VideoShowcaseItem;
   index: number;
   totalItems: number;
   scrollYProgress: any;
   activeIndex: number;
+  isInView: boolean;
+  isMuted: boolean;
+  vimeoLoaded: boolean;
   onItemClick?: (item: VideoShowcaseItem) => void;
-}) {
-  const totalSlots = Math.max(totalItems - 1, 1);
-  const wipeStart = (index - 1) / totalSlots;
-  const wipeEnd   = index / totalSlots;
+}
 
-  const clipHeightRaw = useTransform(
-    scrollYProgress,
-    [Math.max(0, wipeStart), wipeEnd],
-    ["0vh", "100vh"]
-  );
-  const innerYRaw = useTransform(
-    scrollYProgress,
-    [Math.max(0, wipeStart), wipeEnd],
-    ["100vh", "0vh"]
-  );
-
-  const clipHeight = useSpring(clipHeightRaw, { stiffness: 90, damping: 22, mass: 0.6 });
-  const innerY     = useSpring(innerYRaw,     { stiffness: 90, damping: 22, mass: 0.6 });
-
-  // Slides 1+: title fades in as wipe completes
-  const titleOpacity = useTransform(
-    scrollYProgress,
-    [Math.max(0, wipeStart + (wipeEnd - wipeStart) * 0.6), wipeEnd],
-    [0, 1]
-  );
-  const titleY = useTransform(
-    scrollYProgress,
-    [Math.max(0, wipeStart + (wipeEnd - wipeStart) * 0.6), wipeEnd],
-    ["24px", "0px"]
-  );
-
-  // Slide 0: title starts visible, fades out as slide 1 wipes over it
-  const slide0TitleOpacity = useTransform(scrollYProgress, [0, 1 / totalSlots], [1, 0]);
-  const slide0TitleY       = useTransform(scrollYProgress, [0, 1 / totalSlots], ["0px", "-20px"]);
-
-  const isActiveOrAdjacent = Math.abs(activeIndex - index) <= 1;
+function FadeSlide({
+  item,
+  index,
+  totalItems,
+  scrollYProgress,
+  activeIndex,
+  isInView,
+  isMuted,
+  vimeoLoaded,
+  onItemClick,
+}: FadeSlideProps) {
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const playerRef = useRef<any>(null);
+  const [playerReady, setPlayerReady] = useState(false);
 
   const getThumbnailSrc = (slideItem: VideoShowcaseItem, idx: number) => {
     if (slideItem.poster) return slideItem.poster;
     return `/images/reel/reel-${(idx % 6) + 1}.png`;
   };
 
-  // ── Slide 0: always full-height, no clipping ─────────────────────────────
-  if (index === 0) {
-    return (
-      <div
-        style={{ position: "absolute", inset: 0, zIndex: 1 }}
-        onClick={() => onItemClick && onItemClick(item)}
-      >
-        <div className="fvs-video-wrapper">
-          {item.type === "video" ? (
-            <iframe
-              src={item.src}
-              className={item.rotate ? `rotate-video-${item.rotate}` : ""}
-              style={item.rotate ? { border: "none" } : { width: "100%", height: "100%", border: "none" }}
-              allow="autoplay; fullscreen"
-              title={item.title}
-              tabIndex={-1}
-            />
-          ) : (
-            <img src={getThumbnailSrc(item, index)} alt={item.alt || item.title} className="fvs-image-fallback" />
-          )}
-          <div className="fvs-dark-overlay" />
-        </div>
+  // Instantiates the Vimeo Player exactly once on mount, cleans up on unmount
+  useEffect(() => {
+    const iframe = iframeRef.current;
+    if (iframe && typeof window !== "undefined" && (window as any).Vimeo) {
+      if (!playerRef.current) {
+        try {
+          const player = new (window as any).Vimeo.Player(iframe);
+          playerRef.current = player;
+          
+          player.ready().then(() => {
+            player.setMuted(true);
+            player.setVolume(0);
+            setPlayerReady(true);
+          }).catch((err) => {
+            console.error("Vimeo player ready promise rejected:", err);
+          });
+        } catch (e) {
+          console.error("Vimeo player instantiation error:", e);
+        }
+      }
+    }
+    
+    return () => {
+      if (playerRef.current) {
+        playerRef.current = null;
+        setPlayerReady(false);
+      }
+    };
+  }, [vimeoLoaded]);
 
-        <motion.div
-          style={{ opacity: slide0TitleOpacity, y: slide0TitleY, position: "absolute", inset: 0, zIndex: 15, pointerEvents: "none" }}
-          className="fvs-content-layer"
-        >
-          <h2 className="fvs-title">{item.title}</h2>
-        </motion.div>
-      </div>
-    );
-  }
+  // Synchronize playback and volume states on state changes
+  useEffect(() => {
+    const player = playerRef.current;
+    if (!player || !playerReady) return;
 
-  // ── Slides 1+: clipped wipe reveal ───────────────────────────────────────
+    player.ready().then(() => {
+      const isActive = activeIndex === index;
+      const isClose = Math.abs(activeIndex - index) <= 1;
+
+      // Sync mute and volume
+      if (!isInView || isMuted || !isActive) {
+        player.setMuted(true);
+        player.setVolume(0);
+      } else {
+        player.setMuted(false);
+        player.setVolume(1);
+      }
+
+      // Sync play/pause based on proximity and section visibility
+      if (isInView && isClose) {
+        player.play().catch(() => {});
+      } else {
+        player.pause().catch(() => {});
+      }
+    });
+  }, [activeIndex, isInView, isMuted, index, playerReady]);
+
+  const isActive = activeIndex === index;
+  const isNeighbor = Math.abs(activeIndex - index) <= 1;
+  const isVisible = isActive || isNeighbor;
+  // Ensure the active slide always has the highest stack index to prevent slide 2 overlapping slide 1
+  const zIndex = isActive ? 10 : (isNeighbor ? 5 : 1);
+
   return (
     <motion.div
-      style={{ height: clipHeight, position: "absolute", bottom: 0, left: 0, right: 0, overflow: "hidden", zIndex: index + 1 }}
-      onClick={() => onItemClick && onItemClick(item)}
+      className="fvs-slide"
+      animate={{
+        opacity: isActive ? 1 : 0,
+      }}
+      transition={{
+        duration: 0.5,
+        ease: [0.22, 1, 0.36, 1],
+      }}
+      style={{
+        display: isVisible ? "block" : "none",
+        zIndex: zIndex,
+        pointerEvents: isActive ? "auto" : "none"
+      }}
     >
-      <motion.div
-        style={{ y: innerY, position: "absolute", bottom: 0, left: 0, right: 0, height: "100vh" }}
+      <div 
+        className="fvs-video-wrapper" 
+        onClick={() => onItemClick && onItemClick(item)}
+        style={{ cursor: "pointer" }}
       >
-        <div className="fvs-video-wrapper">
-          {isActiveOrAdjacent && (
-            item.type === "video" ? (
-              <iframe
-                src={item.src}
-                className={item.rotate ? `rotate-video-${item.rotate}` : ""}
-                style={item.rotate ? { border: "none" } : { width: "100%", height: "100%", border: "none" }}
-                allow="autoplay; fullscreen"
-                title={item.title}
-                tabIndex={-1}
-              />
-            ) : (
-              <img src={getThumbnailSrc(item, index)} alt={item.alt || item.title} className="fvs-image-fallback" />
-            )
-          )}
-          <div className="fvs-dark-overlay" />
-        </div>
-
-        <motion.div
-          style={{ opacity: titleOpacity, y: titleY, position: "absolute", inset: 0, zIndex: 15, pointerEvents: "none" }}
-          className="fvs-content-layer"
-        >
-          <h2 className="fvs-title">{item.title}</h2>
-        </motion.div>
-      </motion.div>
+        {item.type === "video" ? (
+          <iframe
+            ref={iframeRef}
+            src={item.src}
+            className={item.rotate ? `rotate-video-${item.rotate}` : ""}
+            style={item.rotate ? { border: "none" } : { width: "100%", height: "100%", border: "none" }}
+            allow="autoplay; fullscreen"
+            title={item.title}
+            tabIndex={-1}
+          />
+        ) : (
+          <img src={getThumbnailSrc(item, index)} alt={item.alt || item.title} className="fvs-image-fallback" />
+        )}
+        <div className="fvs-dark-overlay" />
+      </div>
     </motion.div>
+  );
+}
+
+// ─── Fade Text (Scrolling Title Layer) ───────────────────────────────────────
+interface FadeTextProps {
+  title: string;
+  index: number;
+  totalItems: number;
+  scrollYProgress: any;
+}
+
+function FadeText({ title, index, totalItems, scrollYProgress }: FadeTextProps) {
+  const totalSlots = Math.max(totalItems - 1, 1);
+  
+  const points: number[] = [];
+  const opacityValues: number[] = [];
+  const scaleValues: number[] = [];
+
+  if (index > 0) {
+    points.push((index - 0.45) / totalSlots);
+    opacityValues.push(0);
+    scaleValues.push(0.92);
+  }
+  
+  points.push(index / totalSlots);
+  opacityValues.push(1);
+  scaleValues.push(1.0);
+  
+  if (index < totalItems - 1) {
+    points.push((index + 0.45) / totalSlots);
+    opacityValues.push(0);
+    scaleValues.push(0.92);
+  }
+
+  const titleOpacity = useTransform(scrollYProgress, points, opacityValues);
+  const titleScale = useTransform(scrollYProgress, points, scaleValues);
+
+  return (
+    <div className="fvs-text-slide">
+      <motion.h2 
+        className="fvs-title" 
+        style={{ opacity: titleOpacity, scale: titleScale }}
+      >
+        {title}
+      </motion.h2>
+    </div>
   );
 }
 
@@ -161,6 +209,12 @@ export default function FullscreenVideoShowcase({
 }: FullscreenVideoShowcaseProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [isMuted, setIsMuted] = useState(true);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [vimeoLoaded, setVimeoLoaded] = useState(false);
+
+  // Track if showcase container is in viewport to prevent early playback
+  const isInView = useInView(containerRef, { margin: "-5% 0px -5% 0px" });
 
   // Stable refs — read inside effects with [] deps (no stale closures)
   const activeIndexRef  = useRef(0);
@@ -177,6 +231,34 @@ export default function FullscreenVideoShowcase({
     offset: ["start start", "end end"],
   });
 
+  const totalSlots = Math.max(items.length - 1, 1);
+
+  // ── Vimeo SDK Loading Check ──────────────────────────────────────────────
+  useEffect(() => {
+    if ((window as any).Vimeo) {
+      setVimeoLoaded(true);
+      return;
+    }
+    const checkVimeo = setInterval(() => {
+      if ((window as any).Vimeo) {
+        setVimeoLoaded(true);
+        clearInterval(checkVimeo);
+      }
+    }, 100);
+    return () => clearInterval(checkVimeo);
+  }, []);
+
+  // ── Sliding Highlight Position for Side Nav ──────────────────────────────
+  const rawHighlightY = useTransform(scrollYProgress, [0, 1], [0, totalSlots * 48]);
+  const highlightY = useSpring(rawHighlightY, { stiffness: 120, damping: 24, mass: 0.5 });
+
+  // ── Title Y Translation (Vertical Scrolling Text Container) ──────────────
+  const textY = useTransform(
+    scrollYProgress,
+    [0, 1],
+    ["0vh", `-${totalSlots * 100}vh`]
+  );
+
   // ── Track active slide index ──────────────────────────────────────────────
   useEffect(() => {
     return scrollYProgress.on("change", (latest: number) => {
@@ -189,7 +271,7 @@ export default function FullscreenVideoShowcase({
   }, [scrollYProgress]);
 
   // ── Stable scrollToSlide stored in a ref ─────────────────────────────────
-  const scrollToSlideRef = useRef((index: number, duration = 0.9) => {
+  const scrollToSlideRef = useRef((index: number, duration = 0.55) => {
     const lenis     = lenisStableRef.current?.current;
     const container = containerRef.current;
     if (!lenis || !container) return;
@@ -203,27 +285,71 @@ export default function FullscreenVideoShowcase({
     lenis.scrollTo(target, { duration });
   });
 
+  // ── Navigation Click Handlers ─────────────────────────────────────────────
+  const handleNavClick = (index: number) => scrollToSlideRef.current(index, 0.55);
+
+  const handleHomeClick = () => {
+    const lenis = lenisRef?.current;
+    if (lenis) {
+      lenis.scrollTo(0, { duration: 1.5 });
+    } else {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
+
+  const toggleMute = () => {
+    setIsMuted((prev) => !prev);
+  };
+
+  const handleMenuLinkClick = (targetId: string) => {
+    setIsMenuOpen(false);
+    setTimeout(() => {
+      const lenis = lenisRef?.current;
+      if (targetId === "home") {
+        if (lenis) lenis.scrollTo(0, { duration: 1.5 });
+        else window.scrollTo({ top: 0, behavior: "smooth" });
+      } else {
+        const el = document.getElementById(targetId);
+        if (el) {
+          if (lenis) lenis.scrollTo(el, { duration: 1.5 });
+          else el.scrollIntoView({ behavior: "smooth" });
+        }
+      }
+    }, 400);
+  };
+
   // ── Wheel intercept: snap immediately on scroll intent ────────────────────
   useEffect(() => {
-    const COOLDOWN = 750;
+    const COOLDOWN = 600; // Lock input until snapping animation completes
 
     const onWheel = (e: WheelEvent) => {
       const container = containerRef.current;
       if (!container) return;
       const rect = container.getBoundingClientRect();
-      if (rect.top > 2 || rect.bottom < window.innerHeight - 2) return;
-      if (Math.abs(e.deltaY) < 5) return;
 
+      // Check if the container is currently active and stuck in view
+      const isSticky = rect.top <= 10 && rect.bottom >= window.innerHeight - 10;
+      if (!isSticky) return;
+
+      const n = itemsRef.current.length;
+      const dir = e.deltaY > 0 ? 1 : -1;
+      
+      // Determine if we should allow native scroll exit:
+      const isExitingUp = activeIndexRef.current === 0 && dir === -1;
+      const isExitingDown = activeIndexRef.current === n - 1 && dir === 1;
+
+      if (isExitingUp || isExitingDown) {
+        return; // Allow native scroll to pass through
+      }
+
+      // Inside boundaries: strictly lock scroll and trigger snap transition
       e.preventDefault();
       e.stopPropagation();
 
       if (isSnappingRef.current) return;
+      if (Math.abs(e.deltaY) < 5) return;
 
-      const n       = itemsRef.current.length;
-      const dir     = e.deltaY > 0 ? 1 : -1;
       const nextIdx = activeIndexRef.current + dir;
-      if (nextIdx < 0 || nextIdx >= n) return;
-
       isSnappingRef.current = true;
       scrollToSlideRef.current(nextIdx);
       setTimeout(() => { isSnappingRef.current = false; }, COOLDOWN);
@@ -237,53 +363,43 @@ export default function FullscreenVideoShowcase({
   useEffect(() => {
     let touchStartY = 0;
     const SWIPE_THRESHOLD = 40;
-    const COOLDOWN = 1000;
+    const COOLDOWN = 600;
 
     const onTouchStart = (e: TouchEvent) => {
       touchStartY = e.touches[0].clientY;
     };
 
     const onTouchMove = (e: TouchEvent) => {
-      if (isSnappingRef.current) {
-        if (e.cancelable) e.preventDefault();
-        return;
-      }
-
       const container = containerRef.current;
       if (!container) return;
       const rect = container.getBoundingClientRect();
 
-      // Check if we are in the sticky range
       const isSticky = rect.top <= 10 && rect.bottom >= window.innerHeight - 10;
       if (!isSticky) return;
 
       const deltaY = touchStartY - e.touches[0].clientY;
       const n = itemsRef.current.length;
+      const dir = deltaY > 0 ? 1 : -1;
 
-      // Allow exiting the section upwards if on the first item and scrolling up
-      const isMovingUpToExit = activeIndexRef.current === 0 && deltaY < 0;
-      // Allow exiting the section downwards if on the last item and scrolling down
-      const isMovingDownToExit = activeIndexRef.current === n - 1 && deltaY > 0;
+      const isExitingUp = activeIndexRef.current === 0 && dir === -1;
+      const isExitingDown = activeIndexRef.current === n - 1 && dir === 1;
 
-      if (isMovingUpToExit || isMovingDownToExit) {
+      if (isExitingUp || isExitingDown) {
         return;
       }
 
-      // Prevent native scrolling within the showcase to lock the scroll
       if (e.cancelable) e.preventDefault();
 
+      if (isSnappingRef.current) return;
+
       if (Math.abs(deltaY) >= SWIPE_THRESHOLD) {
-        const dir = deltaY > 0 ? 1 : -1;
         const nextIdx = activeIndexRef.current + dir;
-        if (nextIdx >= 0 && nextIdx < n) {
-          isSnappingRef.current = true;
-          scrollToSlideRef.current(nextIdx);
-          // Lock starting touch point to current value to avoid further thresholds during this gesture
-          touchStartY = e.touches[0].clientY;
-          setTimeout(() => {
-            isSnappingRef.current = false;
-          }, COOLDOWN);
-        }
+        isSnappingRef.current = true;
+        scrollToSlideRef.current(nextIdx);
+        touchStartY = e.touches[0].clientY;
+        setTimeout(() => {
+          isSnappingRef.current = false;
+        }, COOLDOWN);
       }
     };
 
@@ -317,7 +433,7 @@ export default function FullscreenVideoShowcase({
         const target     = scrollTop + (idx / totalSlots) * (rect.height - window.innerHeight);
 
         if (Math.abs(window.scrollY - target) > 30) {
-          lenis.scrollTo(target, { duration: 0.8 });
+          lenis.scrollTo(target, { duration: 0.55 });
         }
       }, 120);
     };
@@ -328,13 +444,6 @@ export default function FullscreenVideoShowcase({
       clearTimeout(timer);
     };
   }, []);
-
-  const handleNavClick = (index: number) => scrollToSlideRef.current(index, 1.2);
-
-  const getThumbnailSrc = (item: VideoShowcaseItem, index: number) => {
-    if (item.poster) return item.poster;
-    return `/images/reel/reel-${(index % 6) + 1}.png`;
-  };
 
   if (!items || items.length === 0) return null;
 
@@ -352,40 +461,105 @@ export default function FullscreenVideoShowcase({
       >
         <div className="fvs-grain-overlay" aria-hidden="true" />
 
+        {/* Floating Top-Corner Header Controls */}
+        <div className="fvs-header-controls">
+          <div className="fvs-header-left">
+            <button 
+              onClick={handleHomeClick} 
+              className="fvs-header-btn circular-btn"
+              aria-label="Scroll to Home"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                <polyline points="9 22 9 12 15 12 15 22"/>
+              </svg>
+            </button>
+          </div>
+          
+          <div className="fvs-header-right">
+            <button 
+              onClick={toggleMute} 
+              className="fvs-header-btn circular-btn"
+              aria-label={isMuted ? "Unmute Audio" : "Mute Audio"}
+            >
+              {isMuted ? (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                  <line x1="23" y1="9" x2="17" y2="15"/>
+                  <line x1="17" y1="9" x2="23" y2="15"/>
+                </svg>
+              ) : (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                  <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>
+                </svg>
+              )}
+            </button>
+            
+            <button 
+              onClick={() => setIsMenuOpen(true)}
+              className="fvs-header-btn pill-btn menu-btn"
+              aria-label="Open Navigation Menu"
+            >
+              MENU
+            </button>
+          </div>
+        </div>
+
+        {/* Video Slides Viewport (Crossfading Absolute Layers) */}
         <div className="fvs-viewport">
           {items.map((item, idx) => (
-            <WipeSlide
+            <FadeSlide
               key={idx}
               item={item}
               index={idx}
               totalItems={items.length}
               scrollYProgress={scrollYProgress}
               activeIndex={activeIndex}
+              isInView={isInView}
+              isMuted={isMuted}
+              vimeoLoaded={vimeoLoaded}
               onItemClick={onItemClick}
             />
           ))}
         </div>
 
-        {/* Vertical glass nav pill */}
-        <div className="fvs-nav-wrapper">
-          <div className="fvs-nav-container">
-            {items.map((item, idx) => {
-              const numStr   = String(idx + 1).padStart(2, "0");
+        {/* Vertical Scrolling Titles Stack */}
+        <motion.div
+          className="fvs-text-scroll-container"
+          style={{ y: textY }}
+        >
+          {items.map((item, idx) => (
+            <FadeText
+              key={idx}
+              title={item.title}
+              index={idx}
+              totalItems={items.length}
+              scrollYProgress={scrollYProgress}
+            />
+          ))}
+        </motion.div>
+
+        {/* Side Numbers Navigation Progress indicator */}
+        <div className="fvs-indicator-pill">
+          <div className="fvs-indicator-numbers">
+            <motion.div 
+              className="fvs-indicator-highlight"
+              style={{ y: highlightY }}
+            />
+            {items.map((_, idx) => {
+              const numStr = String(idx + 1).padStart(2, "0");
               const isActive = idx === activeIndex;
-              const thumbUrl = getThumbnailSrc(item, idx);
               return (
-                <button
-                  key={idx}
+                <div 
+                  key={idx} 
+                  className="fvs-indicator-num-wrapper"
                   onClick={() => handleNavClick(idx)}
-                  className={`fvs-nav-btn ${isActive ? "active" : ""}`}
-                  aria-label={`Go to slide ${numStr}`}
                 >
-                  <span className="fvs-nav-number">{numStr}</span>
-                  <div className="fvs-nav-tooltip">
-                    <img src={thumbUrl} alt={item.title} className="fvs-nav-tooltip-thumb" />
-                    <span className="fvs-nav-tooltip-text">{item.title}</span>
-                  </div>
-                </button>
+                  <span className={`fvs-indicator-num ${isActive ? "active" : ""}`}>
+                    {numStr}
+                  </span>
+                </div>
               );
             })}
           </div>
@@ -400,6 +574,61 @@ export default function FullscreenVideoShowcase({
           </span>
         </div>
       </div>
+
+      {/* Fullscreen Navigation Modal Menu */}
+      <AnimatePresence>
+        {isMenuOpen && (
+          <motion.div 
+            className="fvs-menu-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.4, ease: "easeInOut" }}
+          >
+            <button 
+              className="fvs-menu-close-btn"
+              onClick={() => setIsMenuOpen(false)}
+              aria-label="Close Menu"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
+
+            <div className="fvs-menu-container">
+              <motion.div 
+                className="fvs-menu-link" 
+                onClick={() => handleMenuLinkClick("home")}
+                whileHover={{ scale: 1.05 }}
+              >
+                HOME
+              </motion.div>
+              <motion.div 
+                className="fvs-menu-link" 
+                onClick={() => handleMenuLinkClick("services")}
+                whileHover={{ scale: 1.05 }}
+              >
+                SERVICES
+              </motion.div>
+              <motion.div 
+                className="fvs-menu-link" 
+                onClick={() => handleMenuLinkClick("media-carousel")}
+                whileHover={{ scale: 1.05 }}
+              >
+                SHOWCASE
+              </motion.div>
+              <motion.div 
+                className="fvs-menu-link" 
+                onClick={() => handleMenuLinkClick("contact")}
+                whileHover={{ scale: 1.05 }}
+              >
+                CONTACT
+              </motion.div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </section>
   );
 }

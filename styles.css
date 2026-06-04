@@ -4935,7 +4935,7 @@ section {
 
 
 /* ──────────────────────────────────────────────────────────────────────────
-   5. FULLSCREEN VIDEO SHOWCASE (Let It Rip Pictures Style)
+   5. FULLSCREEN VIDEO SHOWCASE (Seamless Crossfade Style)
    ────────────────────────────────────────────────────────────────────────── */
 
 .fvs-section {
@@ -4975,16 +4975,15 @@ section {
   z-index: 1;
 }
 
-.fvs-slide-container {
+/* Absolute Overlay Video Slides */
+.fvs-slide {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   overflow: hidden;
-  cursor: pointer;
+  background: #000;
+  will-change: opacity;
 }
 
 .fvs-video-wrapper {
@@ -5008,14 +5007,14 @@ section {
   transform: translate(-50%, -50%);
   pointer-events: none;
   border: none;
-  filter: brightness(0.7) contrast(1.05);
+  filter: brightness(0.65) contrast(1.05);
 }
 
 .fvs-image-fallback {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  filter: brightness(0.6) contrast(1.05);
+  filter: brightness(0.55) contrast(1.05);
 }
 
 /* Gradient dark overlay for title legibility */
@@ -5025,148 +5024,184 @@ section {
   background: linear-gradient(
     to bottom,
     rgba(0, 0, 0, 0.4) 0%,
-    rgba(0, 0, 0, 0.25) 50%,
+    rgba(0, 0, 0, 0.2) 50%,
     rgba(0, 0, 0, 0.5) 100%
   );
   pointer-events: none;
 }
 
-/* Content overlays */
-.fvs-content-layer {
-  position: relative;
-  z-index: 10;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 20px;
-  padding: 0 40px;
-  max-width: 1200px;
-  text-align: center;
-}
-
-.fvs-title {
-  font-family: var(--display);
-  font-size: clamp(2.2rem, 7.5vw, 6rem);
-  font-weight: 900;
-  text-transform: uppercase;
-  color: #ffffff;
-  letter-spacing: -0.04em;
-  line-height: 0.85;
-  text-shadow: 0 4px 24px rgba(0, 0, 0, 0.7);
-  margin: 0;
-}
-
-.fvs-scroll-hint {
-  font-family: var(--body);
-  font-size: 10px;
-  font-weight: 900;
-  color: var(--accent);
-  letter-spacing: 0.25em;
-  text-transform: uppercase;
-  padding: 5px 12px;
-  border: 1px solid var(--accent);
-  background: rgba(0, 0, 0, 0.65);
-  box-shadow: 4px 4px 0px 0px var(--accent);
-}
-
-/* Floating Vertical Navigation */
-.fvs-nav-wrapper {
+/* Floating Top-Corner Header Controls */
+.fvs-header-controls {
   position: absolute;
-  right: clamp(18px, 4vw, 44px);
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 50;
-}
-
-.fvs-nav-container {
+  top: clamp(20px, 3.5vh, 40px);
+  left: clamp(24px, 4vw, 60px);
+  right: clamp(24px, 4vw, 60px);
   display: flex;
-  flex-direction: column;
-  gap: 15px;
+  justify-content: space-between;
   align-items: center;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 9999px;
-  padding: 24px 10px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  z-index: 60;
+  pointer-events: auto;
 }
 
-.fvs-nav-btn {
-  position: relative;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.05);
-  color: rgba(255, 255, 255, 0.6);
-  font-family: var(--body);
-  font-size: 10px;
-  font-weight: 700;
+.fvs-header-left,
+.fvs-header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.fvs-header-btn {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 260ms cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+  font-family: var(--body);
 }
 
-.fvs-nav-btn:hover {
-  background: rgba(255, 255, 255, 0.25);
-  color: #ffffff;
+.fvs-header-btn.circular-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+}
+
+.fvs-header-btn.pill-btn {
+  border-radius: 9999px;
+  padding: 0 20px;
+  height: 44px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* Specific tint for MENU button as shown in screenshot */
+.fvs-header-btn.menu-btn {
+  background: rgba(139, 90, 60, 0.28);
+  border-color: rgba(139, 90, 60, 0.4);
+}
+
+.fvs-header-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
   border-color: #ffffff;
-  transform: scale(1.1);
+  transform: translateY(-2px);
 }
 
-.fvs-nav-btn.active {
-  background: var(--accent);
-  color: #ffffff;
-  border-color: var(--accent);
-  box-shadow: 0 0 16px var(--accent);
-  transform: scale(1.15);
+.fvs-header-btn.menu-btn:hover {
+  background: rgba(139, 90, 60, 0.45);
+  border-color: rgba(139, 90, 60, 0.65);
 }
 
-/* Hover Preview Tooltip */
-.fvs-nav-tooltip {
+.fvs-header-btn:active {
+  transform: translateY(0) scale(0.96);
+}
+
+/* Vertical Scrolling Text Overlays */
+.fvs-text-scroll-container {
   position: absolute;
-  right: 50px;
-  top: 50%;
-  transform: translateY(-50%) translateX(-15px);
-  background: #0d0d0d;
-  border: 2px solid var(--accent);
-  box-shadow: 4px 4px 0 0 #000;
-  padding: 8px 12px;
+  inset: 0;
+  height: max-content;
+  display: flex;
+  flex-direction: column;
+  z-index: 15;
+  pointer-events: none;
+  will-change: transform;
+}
+
+.fvs-text-slide {
+  height: 100vh;
+  width: 100vw;
   display: flex;
   align-items: center;
-  gap: 12px;
-  pointer-events: none;
-  opacity: 0;
-  visibility: hidden;
-  transition: all 260ms cubic-bezier(0.16, 1, 0.3, 1);
-  z-index: 100;
+  justify-content: center;
+  padding: 0 10vw;
+  box-sizing: border-box;
 }
 
-.fvs-nav-btn:hover .fvs-nav-tooltip {
-  opacity: 1;
-  visibility: visible;
-  transform: translateY(-50%) translateX(0);
-}
-
-.fvs-nav-tooltip-thumb {
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-}
-
-.fvs-nav-tooltip-text {
-  font-family: var(--body);
-  font-size: 10px;
-  font-weight: 900;
-  letter-spacing: 0.1em;
-  color: #ffffff;
+.fvs-title {
+  font-family: var(--display);
+  font-size: clamp(2.2rem, 7vw, 5.8rem);
+  font-weight: 200;
   text-transform: uppercase;
-  white-space: nowrap;
+  color: transparent;
+  -webkit-text-stroke: 1px rgba(255, 255, 255, 0.45);
+  letter-spacing: -0.02em;
+  line-height: 0.95;
+  text-align: center;
+  will-change: opacity, transform;
+}
+
+/* Side Numbers Progress Indicator Pill */
+.fvs-indicator-pill {
+  position: absolute;
+  right: clamp(24px, 4vw, 60px);
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 50;
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 30px;
+  padding: 16px 6px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+  user-select: none;
+}
+
+.fvs-indicator-numbers {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.fvs-indicator-num-wrapper {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 2;
+  cursor: pointer;
+}
+
+.fvs-indicator-num {
+  font-family: var(--body);
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.35);
+  transition: color 0.3s ease;
+}
+
+.fvs-indicator-num.active {
+  color: #ffffff;
+}
+
+.fvs-indicator-highlight {
+  position: absolute;
+  left: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  z-index: 1;
+  pointer-events: none;
+  will-change: transform;
+}
+
+/* Horizontal glass nav pill (Legacy fallback or tooltip hover preview) */
+.fvs-nav-wrapper {
+  display: none;
 }
 
 /* Footer elements */
@@ -5192,51 +5227,88 @@ section {
   color: var(--accent);
 }
 
-/* Disable hover tooltips on touch devices */
-@media (hover: none) {
-  .fvs-nav-tooltip {
-    display: none !important;
-  }
+/* Fullscreen Menu Overlay */
+.fvs-menu-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background: rgba(0, 0, 0, 0.95);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  will-change: opacity;
 }
 
+.fvs-menu-container {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  text-align: center;
+}
+
+.fvs-menu-link {
+  font-family: var(--display);
+  font-size: clamp(2rem, 7vw, 4.5rem);
+  font-weight: 900;
+  color: rgba(255, 255, 255, 0.35);
+  text-transform: uppercase;
+  letter-spacing: -0.02em;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+}
+
+.fvs-menu-link:hover {
+  color: #ffffff;
+  transform: scale(1.08);
+  letter-spacing: 0.02em;
+}
+
+.fvs-menu-close-btn {
+  position: absolute;
+  top: clamp(20px, 3.5vh, 40px);
+  right: clamp(24px, 4vw, 60px);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  border-radius: 50%;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.fvs-menu-close-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: rotate(90deg);
+}
+
+/* Responsive adjustments */
 @media (max-width: 768px) {
-  .fvs-nav-wrapper {
+  .fvs-indicator-pill {
     right: 14px;
   }
   
-  .fvs-nav-container {
-    padding: 16px 6px;
-    gap: 10px;
+  .fvs-header-controls {
+    top: 20px;
+    left: 20px;
+    right: 20px;
   }
 
-  .fvs-nav-btn {
-    width: 28px;
-    height: 28px;
-    font-size: 9px;
+  .fvs-header-btn.circular-btn {
+    width: 38px;
+    height: 38px;
+  }
+
+  .fvs-header-btn.pill-btn {
+    height: 38px;
+    padding: 0 14px;
+    font-size: 10px;
   }
 }
 
-/* Play button overlay for mobile static posters */
-.fvs-play-btn-overlay {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 8;
-  pointer-events: none;
-}
-
-.fvs-play-btn-circle {
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.7);
-  border: 2px solid var(--accent);
-  box-shadow: 0 0 20px rgba(252, 80, 80, 0.4);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: transform 200ms ease, background 200ms ease;
-}
 
