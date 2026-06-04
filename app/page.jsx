@@ -8,7 +8,6 @@ import { gsap } from "gsap";
 import ShaderBackground from "../components/ShaderBackground";
 import LivingNebulaShader from "../components/LivingNebulaShader";
 import InfiniteGallery from "../components/InfiniteGallery";
-import TrustedFeedback from "../components/TrustedFeedback";
 import { CircularGallery } from "../components/CircularGallery";
 import DualStackFeedback from "../components/DualStackFeedback";
 
@@ -1686,8 +1685,6 @@ export default function Home() {
           items={mediaCarouselItems}
           onItemClick={setActiveModalItem}
         />
-
-        <TrustedFeedback />
 
         <DualStackFeedback />
 
