@@ -237,34 +237,61 @@ export default function FullscreenVideoShowcase({
   useEffect(() => {
     let touchStartY = 0;
     const SWIPE_THRESHOLD = 40;
-    const COOLDOWN = 750;
+    const COOLDOWN = 1000;
 
-    const onTouchStart = (e: TouchEvent) => { touchStartY = e.touches[0].clientY; };
+    const onTouchStart = (e: TouchEvent) => {
+      touchStartY = e.touches[0].clientY;
+    };
 
-    const onTouchEnd = (e: TouchEvent) => {
+    const onTouchMove = (e: TouchEvent) => {
+      if (isSnappingRef.current) {
+        if (e.cancelable) e.preventDefault();
+        return;
+      }
+
       const container = containerRef.current;
       if (!container) return;
       const rect = container.getBoundingClientRect();
-      if (rect.top > 2 || rect.bottom < window.innerHeight - 2) return;
 
-      const deltaY = touchStartY - e.changedTouches[0].clientY;
-      if (Math.abs(deltaY) < SWIPE_THRESHOLD || isSnappingRef.current) return;
+      // Check if we are in the sticky range
+      const isSticky = rect.top <= 10 && rect.bottom >= window.innerHeight - 10;
+      if (!isSticky) return;
 
-      const n       = itemsRef.current.length;
-      const dir     = deltaY > 0 ? 1 : -1;
-      const nextIdx = activeIndexRef.current + dir;
-      if (nextIdx < 0 || nextIdx >= n) return;
+      const deltaY = touchStartY - e.touches[0].clientY;
+      const n = itemsRef.current.length;
 
-      isSnappingRef.current = true;
-      scrollToSlideRef.current(nextIdx);
-      setTimeout(() => { isSnappingRef.current = false; }, COOLDOWN);
+      // Allow exiting the section upwards if on the first item and scrolling up
+      const isMovingUpToExit = activeIndexRef.current === 0 && deltaY < 0;
+      // Allow exiting the section downwards if on the last item and scrolling down
+      const isMovingDownToExit = activeIndexRef.current === n - 1 && deltaY > 0;
+
+      if (isMovingUpToExit || isMovingDownToExit) {
+        return;
+      }
+
+      // Prevent native scrolling within the showcase to lock the scroll
+      if (e.cancelable) e.preventDefault();
+
+      if (Math.abs(deltaY) >= SWIPE_THRESHOLD) {
+        const dir = deltaY > 0 ? 1 : -1;
+        const nextIdx = activeIndexRef.current + dir;
+        if (nextIdx >= 0 && nextIdx < n) {
+          isSnappingRef.current = true;
+          scrollToSlideRef.current(nextIdx);
+          // Lock starting touch point to current value to avoid further thresholds during this gesture
+          touchStartY = e.touches[0].clientY;
+          setTimeout(() => {
+            isSnappingRef.current = false;
+          }, COOLDOWN);
+        }
+      }
     };
 
     window.addEventListener("touchstart", onTouchStart, { passive: true });
-    window.addEventListener("touchend", onTouchEnd, { passive: true });
+    window.addEventListener("touchmove", onTouchMove, { passive: false });
     return () => {
       window.removeEventListener("touchstart", onTouchStart);
-      window.removeEventListener("touchend", onTouchEnd);
+      window.removeEventListener("touchmove", onTouchMove);
     };
   }, []);
 
