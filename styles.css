@@ -5027,7 +5027,7 @@ section {
     rgba(0, 0, 0, 0.2) 50%,
     rgba(0, 0, 0, 0.5) 100%
   );
-  pointer-events: none;
+  pointer-events: auto;
 }
 
 /* Floating Top-Corner Header Controls */
