@@ -53,33 +53,33 @@ const mediaCarouselItems = [
   {
     type: "video",
     src: "https://player.vimeo.com/video/1197831287?background=1&autoplay=1&loop=1&muted=1",
-    title: "PROJECT 01",
+    title: "DARKTRACE — THE DEFENDERS",
     className: "media-card-video-landscape"
   },
   {
     type: "video",
     src: "https://player.vimeo.com/video/1197831230?background=1&autoplay=1&loop=1&muted=1",
-    title: "PROJECT 02",
+    title: "POWERADE — THE ATHLETE'S CODE",
     className: "media-card-video-landscape",
     rotate: 270
   },
   {
     type: "video",
     src: "https://player.vimeo.com/video/1197831232?background=1&autoplay=1&loop=1&muted=1",
-    title: "PROJECT 03",
+    title: "SUPERBET — BET RESPONSIBLY",
     className: "media-card-video-landscape",
     rotate: 270
   },
   {
     type: "video",
     src: "https://player.vimeo.com/video/1197831233?background=1&autoplay=1&loop=1&muted=1",
-    title: "PROJECT 04",
+    title: "HARMAN KARDON — SEE / HEAR",
     className: "media-card-video-portrait"
   },
   {
     type: "video",
     src: "https://player.vimeo.com/video/1197831231?background=1&autoplay=1&loop=1&muted=1",
-    title: "PROJECT 05",
+    title: "REVOLUT — MAKE YOUR MONEY MOVE",
     className: "media-card-video-landscape"
   }
 ];
@@ -548,7 +548,7 @@ export default function Home() {
   const [footerActive, setFooterActive] = useState(false);
 
   useEffect(() => {
-    return footerScrollProgress.onChange((v) => {
+    return footerScrollProgress.on("change", (v) => {
       if (v >= 0.85) {
         setFooterActive(true);
       } else {
