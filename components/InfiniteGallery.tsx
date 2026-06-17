@@ -68,7 +68,7 @@ const DEFAULT_DEPTH_RANGE = 50;
 const MAX_HORIZONTAL_OFFSET = 8;
 const MAX_VERTICAL_OFFSET = 8;
 
-// Custom shader material for blur, opacity, and cloth folding effects
+// Full cloth shader material (desktop)
 const createClothMaterial = () => {
 	return new THREE.ShaderMaterial({
 		transparent: true,
@@ -90,39 +90,23 @@ const createClothMaterial = () => {
       void main() {
         vUv = uv;
         vNormal = normal;
-        
         vec3 pos = position;
-        
-        // Create smooth curving based on scroll force
         float curveIntensity = scrollForce * 0.3;
-        
-        // Base curve across the plane based on distance from center
         float distanceFromCenter = length(pos.xy);
         float curve = distanceFromCenter * distanceFromCenter * curveIntensity;
-        
-        // Add gentle cloth-like ripples
         float ripple1 = sin(pos.x * 2.0 + scrollForce * 3.0) * 0.02;
         float ripple2 = sin(pos.y * 2.5 + scrollForce * 2.0) * 0.015;
         float clothEffect = (ripple1 + ripple2) * abs(curveIntensity) * 2.0;
-        
-        // Flag waving effect when hovered
         float flagWave = 0.0;
         if (isHovered > 0.5) {
-          // Create flag-like wave from left to right
           float wavePhase = pos.x * 3.0 + time * 8.0;
           float waveAmplitude = sin(wavePhase) * 0.1;
-          // Damping effect - stronger wave on the right side (free edge)
           float dampening = smoothstep(-0.5, 0.5, pos.x);
           flagWave = waveAmplitude * dampening;
-          
-          // Add secondary smaller waves for more realistic flag motion
           float secondaryWave = sin(pos.x * 5.0 + time * 12.0) * 0.03 * dampening;
           flagWave += secondaryWave;
         }
-        
-        // Apply Z displacement for curving effect (inverted) with cloth ripples and flag wave
         pos.z -= (curve + clothEffect + flagWave);
-        
         gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
       }
     `,
@@ -133,16 +117,12 @@ const createClothMaterial = () => {
       uniform float scrollForce;
       varying vec2 vUv;
       varying vec3 vNormal;
-      
       void main() {
         vec4 color = texture2D(map, vUv);
-        
-        // Simple blur approximation
         if (blurAmount > 0.0) {
           vec2 texelSize = 1.0 / vec2(textureSize(map, 0));
           vec4 blurred = vec4(0.0);
           float total = 0.0;
-          
           for (float x = -2.0; x <= 2.0; x += 1.0) {
             for (float y = -2.0; y <= 2.0; y += 1.0) {
               vec2 offset = vec2(x, y) * texelSize * blurAmount;
@@ -153,11 +133,39 @@ const createClothMaterial = () => {
           }
           color = blurred / total;
         }
-        
-        // Add subtle lighting effect based on curving
         float curveHighlight = abs(scrollForce) * 0.05;
         color.rgb += vec3(curveHighlight * 0.1);
-        
+        gl_FragColor = vec4(color.rgb, color.a * opacity);
+      }
+    `,
+	});
+};
+
+// Lightweight passthrough shader for mobile — zero cloth/blur cost
+const createMobileMaterial = () => {
+	return new THREE.ShaderMaterial({
+		transparent: true,
+		uniforms: {
+			map: { value: null },
+			opacity: { value: 1.0 },
+			blurAmount: { value: 0.0 },
+			scrollForce: { value: 0.0 },
+			time: { value: 0.0 },
+			isHovered: { value: 0.0 },
+		},
+		vertexShader: `
+      varying vec2 vUv;
+      void main() {
+        vUv = uv;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `,
+		fragmentShader: `
+      uniform sampler2D map;
+      uniform float opacity;
+      varying vec2 vUv;
+      void main() {
+        vec4 color = texture2D(map, vUv);
         gl_FragColor = vec4(color.rgb, color.a * opacity);
       }
     `,
@@ -169,11 +177,13 @@ function ImagePlane({
 	position,
 	scale,
 	material,
+	isMobilePlane = false,
 }: {
 	texture: THREE.Texture;
 	position: [number, number, number];
 	scale: [number, number, number];
 	material: THREE.ShaderMaterial;
+	isMobilePlane?: boolean;
 }) {
 	const meshRef = useRef<THREE.Mesh>(null);
 	const [isHovered, setIsHovered] = useState(false);
@@ -185,10 +195,16 @@ function ImagePlane({
 	}, [material, texture]);
 
 	useEffect(() => {
-		if (material && material.uniforms) {
+		if (material && material.uniforms && !isMobilePlane) {
 			material.uniforms.isHovered.value = isHovered ? 1.0 : 0.0;
 		}
-	}, [material, isHovered]);
+	}, [material, isHovered, isMobilePlane]);
+
+	// On mobile skip hover listeners entirely
+	const hoverProps = isMobilePlane ? {} : {
+		onPointerEnter: () => setIsHovered(true),
+		onPointerLeave: () => setIsHovered(false),
+	};
 
 	return (
 		<mesh
@@ -196,10 +212,10 @@ function ImagePlane({
 			position={position}
 			scale={scale}
 			material={material}
-			onPointerEnter={() => setIsHovered(true)}
-			onPointerLeave={() => setIsHovered(false)}
+			{...hoverProps}
 		>
-			<planeGeometry args={[1, 1, 32, 32]} />
+			{/* Mobile: flat quad (1×1), Desktop: subdivided for cloth deformation (32×32) */}
+			<planeGeometry args={isMobilePlane ? [1, 1, 1, 1] : [1, 1, 32, 32]} />
 		</mesh>
 	);
 }
@@ -208,6 +224,7 @@ function GalleryScene({
 	images,
 	speed = 1,
 	visibleCount = 8,
+	isMobile = false,
 	fadeSettings = {
 		fadeIn: { start: 0.05, end: 0.15 },
 		fadeOut: { start: 0.85, end: 0.95 },
@@ -217,7 +234,7 @@ function GalleryScene({
 		blurOut: { start: 0.9, end: 1.0 },
 		maxBlur: 3.0,
 	},
-}: Omit<InfiniteGalleryProps, 'className' | 'style'>) {
+}: Omit<InfiniteGalleryProps, 'className' | 'style'> & { isMobile?: boolean }) {
 	const [scrollVelocity, setScrollVelocity] = useState(0);
 	const [autoPlay, setAutoPlay] = useState(true);
 	const lastInteraction = useRef(Date.now());
@@ -235,10 +252,12 @@ function GalleryScene({
 	// Load textures
 	const textures = useTexture(normalizedImages.map((img) => img.src));
 
-	// Create materials pool
+	// Create materials pool — lightweight passthrough on mobile
 	const materials = useMemo(
-		() => Array.from({ length: visibleCount }, () => createClothMaterial()),
-		[visibleCount]
+		() => Array.from({ length: visibleCount }, () =>
+			isMobile ? createMobileMaterial() : createClothMaterial()
+		),
+		[visibleCount, isMobile]
 	);
 
 	const spatialPositions = useMemo(() => {
@@ -508,9 +527,10 @@ function GalleryScene({
 					<ImagePlane
 						key={plane.index}
 						texture={texture}
-						position={[plane.x, plane.y, worldZ]} // Position planes relative to camera center
+						position={[plane.x, plane.y, worldZ]}
 						scale={scale}
 						material={material}
+						isMobilePlane={isMobile}
 					/>
 				);
 			})}
@@ -593,13 +613,19 @@ export default function InfiniteGallery({
 		<div className={className} style={style}>
 			<Canvas
 				camera={{ position: [0, 0, 0], fov: 55 }}
-				gl={{ antialias: !isMobile, alpha: true }}
-				dpr={isMobile ? 1.0 : [1, 1.5]}
+				gl={{
+					antialias: false, // always off — minimal visual difference, big perf gain
+					alpha: true,
+					powerPreference: isMobile ? 'low-power' : 'default',
+				}}
+				dpr={isMobile ? 0.75 : [1, 1.5]}
+				performance={{ min: 0.5 }}
 			>
 				<GalleryScene
 					images={images}
 					speed={speed}
-					visibleCount={isMobile ? Math.min(6, visibleCount) : visibleCount}
+					visibleCount={isMobile ? Math.min(5, visibleCount) : visibleCount}
+					isMobile={isMobile}
 					fadeSettings={fadeSettings}
 					blurSettings={isMobile ? { ...blurSettings, maxBlur: 0.0 } : blurSettings}
 				/>

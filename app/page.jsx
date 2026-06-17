@@ -169,6 +169,45 @@ const fadeUpPropsDelay = {
   transition: { duration: 0.7, delay: 0.15, ease: [0.22, 1, 0.36, 1] }
 };
 
+const metaLeftVariants = {
+  hidden: { opacity: 0, x: -50 },
+  visible: {
+    opacity: [0, 0.9, 0.2, 0.9],
+    x: 0,
+    transition: {
+      x: { type: "tween", ease: [0.19, 1, 0.22, 1], duration: 0.45, delay: 0.2 },
+      opacity: { duration: 0.35, times: [0, 0.4, 0.6, 1], delay: 0.2 }
+    }
+  }
+};
+
+const metaRightVariants = {
+  hidden: { opacity: 0, x: 50 },
+  visible: {
+    opacity: [0, 0.9, 0.2, 0.9],
+    x: 0,
+    transition: {
+      x: { type: "tween", ease: [0.19, 1, 0.22, 1], duration: 0.45, delay: 0.2 },
+      opacity: { duration: 0.35, times: [0, 0.4, 0.6, 1], delay: 0.2 }
+    }
+  }
+};
+
+const galleryFooterVariants = {
+  hidden: {
+    opacity: 0,
+    y: 20
+  },
+  visible: {
+    opacity: [0, 1, 0.3, 1],
+    y: 0,
+    transition: {
+      y: { type: "tween", ease: [0.19, 1, 0.22, 1], duration: 0.4, delay: 0.6 },
+      opacity: { duration: 0.35, times: [0, 0.4, 0.6, 1], delay: 0.6 }
+    }
+  }
+};
+
 /**
  * Universal Reveal Component with dynamic transition types
  */
@@ -319,6 +358,9 @@ export default function Home() {
   const isTransitioningRef = useRef(false);
   const scrollCooldownRef = useRef(false);
   const hasDisappearedRef = useRef(false);
+  const [isServicesTextVisible, setIsServicesTextVisible] = useState(false);
+  const isServicesTextVisibleRef = useRef(false);
+  const quoteRef = useRef(null);
 
   const transitionToSection = (target, speedMultiplier = 1) => {
     if (isTransitioningRef.current) return;
@@ -438,6 +480,193 @@ export default function Home() {
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
+
+  useEffect(() => {
+    if (!quoteRef.current) return;
+    const words = quoteRef.current.querySelectorAll(".quote-word-item");
+    if (words.length === 0) return;
+
+    if (isServicesTextVisible) {
+      const tl = gsap.timeline();
+
+      // Reset states
+      gsap.set(words, { opacity: 0, y: 0, x: 0, scale: 1, skewX: 0, skewY: 0, filter: "none", clipPath: "none" });
+      const bleedChars = words[8]?.querySelectorAll(".bleed-char");
+      if (bleedChars && bleedChars.length > 0) {
+        gsap.set(bleedChars, { opacity: 0, x: 0, textShadow: "none" });
+      }
+
+      // 0. "I" - Glitchy strobe flicker
+      tl.to(words[0], {
+        opacity: 1,
+        duration: 0.35,
+        keyframes: [
+          { opacity: 0 },
+          { opacity: 1 },
+          { opacity: 0.1 },
+          { opacity: 1 }
+        ],
+        ease: "none"
+      }, 0);
+
+      // 1. "only" - Guillotine drop
+      tl.fromTo(words[1], 
+        { y: -80, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.35, ease: "power4.out" },
+        0.08
+      );
+
+      // 2. "fear" - Horizontal plate slam from left
+      tl.fromTo(words[2],
+        { x: -100, skewX: -20, opacity: 0 },
+        { x: 0, skewX: 0, opacity: 1, duration: 0.4, ease: "power3.out" },
+        0.14
+      );
+
+      // 3. "god." - Intense flash + scale slam + red shake
+      tl.fromTo(words[3],
+        { scale: 2.2, opacity: 0 },
+        { 
+          scale: 1.15, 
+          opacity: 1, 
+          duration: 0.35, 
+          ease: "power4.inOut",
+          onComplete: () => {
+            gsap.to(words[3], {
+              x: 6,
+              repeat: 5,
+              yoyo: true,
+              duration: 0.04,
+              clearProps: "x"
+            });
+          }
+        },
+        0.22
+      );
+
+      // 4. "The" - Optical blur-snap
+      tl.fromTo(words[4],
+        { filter: "blur(18px)", scale: 1.3, opacity: 0 },
+        { filter: "blur(0px)", scale: 1, opacity: 0.95, duration: 0.48, ease: "power2.out" },
+        0.28
+      );
+
+      // 5. "rest" - Straight heavy slide up
+      tl.fromTo(words[5],
+        { y: 70, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.42, ease: "power3.out" },
+        0.34
+      );
+
+      // 6. "of" - Instant pop
+      tl.fromTo(words[6],
+        { scale: 0.3, opacity: 0 },
+        { scale: 0.9, opacity: 0.9, duration: 0.28, ease: "power1.out" },
+        0.4
+      );
+
+      // 7. "them" - Guillotine crop reveal (wipes up from bottom)
+      tl.fromTo(words[7],
+        { clipPath: "inset(100% 0 0 0)", opacity: 0 },
+        { clipPath: "inset(0% 0 0 0)", opacity: 1, duration: 0.44, ease: "power4.out" },
+        0.46
+      );
+
+      // 8. "bleed" - Full chromatic aberration glitch with letter stagger
+      tl.set(words[8], { opacity: 1, x: 0, skewX: 0 }, 0.52);
+      const chars = words[8]?.querySelectorAll(".bleed-char");
+      if (chars && chars.length > 0) {
+        chars.forEach((char, index) => {
+          const charTl = gsap.timeline();
+          charTl
+            .to(char, { opacity: 1, duration: 0.01 })
+            .to(char, {
+              x: -8,
+              duration: 0.04,
+              ease: "none",
+              onUpdate: function() {
+                const progress = this.progress();
+                const r = Math.round(-8 + progress * 8);
+                char.style.textShadow = `
+                  ${r - 6}px 0 0 rgba(255,0,0,0.85),
+                  ${-r + 6}px 0 0 rgba(0,0,255,0.7),
+                  0 0 35px rgba(255,0,0,0.4)
+                `;
+              }
+            })
+            .to(char, { x: 10, duration: 0.03, ease: "none",
+              onUpdate: function() {
+                char.style.textShadow = `10px 0 0 rgba(255,0,0,0.9), -10px 0 0 rgba(0,0,255,0.8), 0 0 40px rgba(255,0,0,0.5)`;
+              }
+            })
+            .to(char, { opacity: 0, duration: 0.02 })
+            .to(char, { x: -5, opacity: 1, duration: 0.02, ease: "none",
+              onUpdate: function() {
+                char.style.textShadow = `-5px 0 0 rgba(255,0,0,0.95), 5px 0 0 rgba(0,0,255,0.85)`;
+              }
+            })
+            .to(char, { x: 7, duration: 0.03, ease: "none",
+              onUpdate: function() {
+                char.style.textShadow = `7px 0 0 rgba(255,0,0,0.8), -7px 0 0 rgba(0,0,255,0.7)`;
+              }
+            })
+            .to(char, { opacity: 0, duration: 0.025 })
+            .to(char, { opacity: 1, x: -3, duration: 0.02,
+              onUpdate: function() {
+                char.style.textShadow = `-3px 0 0 rgba(255,0,0,0.7), 3px 0 0 rgba(0,0,255,0.6)`;
+              }
+            })
+            .to(char, {
+              x: 0,
+              duration: 0.22,
+              ease: "power3.out",
+              onUpdate: function() {
+                const p = this.progress();
+                const offset = Math.round((1 - p) * 3);
+                char.style.textShadow = `
+                  ${offset}px 0 0 rgba(160,0,0,${0.45 * (1-p)}),
+                  ${-offset}px 0 0 rgba(255,30,30,${0.2 * (1-p)}),
+                  0 0 ${42 * (1-p) + 8}px rgba(255,0,0,${0.18 + 0.12 * (1-p)})
+                `;
+              },
+              onComplete: function() {
+                char.style.textShadow = "";
+              }
+            });
+          tl.add(charTl, 0.52 + index * 0.06);
+        });
+      }
+
+      // 9. "like" - Laser pop-in
+      tl.fromTo(words[9],
+        { scale: 1.4, opacity: 0 },
+        { scale: 1, opacity: 0.9, duration: 0.32, ease: "power2.out" },
+        0.6
+      );
+
+      // 10. "me." - Heavy final stamp zoom
+      tl.fromTo(words[10],
+        { scale: 2.8, y: -30, opacity: 0 },
+        { 
+          scale: 1.25, 
+          y: -4, 
+          opacity: 1, 
+          duration: 0.38, 
+          ease: "power4.out"
+        },
+        0.66
+      );
+
+    } else {
+      const allBleedChars = quoteRef.current?.querySelectorAll(".bleed-char");
+      gsap.killTweensOf(words);
+      if (allBleedChars) {
+        gsap.killTweensOf(allBleedChars);
+        gsap.set(allBleedChars, { opacity: 0, x: 0, textShadow: "none" });
+      }
+      gsap.set(words, { opacity: 0 });
+    }
+  }, [isServicesTextVisible]);
 
   const requestGyro = async () => {
     if (typeof DeviceOrientationEvent !== "undefined" && typeof DeviceOrientationEvent.requestPermission === "function") {
@@ -583,13 +812,16 @@ export default function Home() {
   const hudOpacity = useTransform(theaterProgress, [0.35, 0.6], [1, 0]);
 
   // Live ticking timecode for brutalist film overlay
+  // Paused via IntersectionObserver when theater section is not visible
   useEffect(() => {
     let hours = 0;
     let minutes = 14;
     let seconds = 23;
     let frames = 18;
+    let intervalId = null;
+    let isVisible = false;
 
-    const interval = setInterval(() => {
+    const tick = () => {
       frames++;
       if (frames >= 24) {
         frames = 0;
@@ -603,13 +835,36 @@ export default function Home() {
           }
         }
       }
-
       const pad = (num) => String(num).padStart(2, "0");
       setTimecode(`${pad(hours)}:${pad(minutes)}:${pad(seconds)}:${pad(frames)}`);
-    }, 1000 / 24); // 24 fps tick
+    };
 
-    return () => clearInterval(interval);
+    const startTick = () => { if (!intervalId) intervalId = setInterval(tick, 1000 / 24); };
+    const stopTick  = () => { if (intervalId) { clearInterval(intervalId); intervalId = null; } };
+
+    // Only run when theater section is in view
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        isVisible = entry.isIntersecting;
+        isVisible ? startTick() : stopTick();
+      },
+      { threshold: 0.01 }
+    );
+
+    // Observe as soon as the ref is available (poll briefly)
+    const attachObserver = () => {
+      const el = theaterRef.current;
+      if (el) { observer.observe(el); }
+      else { setTimeout(attachObserver, 300); }
+    };
+    attachObserver();
+
+    return () => {
+      stopTick();
+      observer.disconnect();
+    };
   }, []);
+
 
   const toggleMute = () => {
     if (vimeoPlayer) {
@@ -663,8 +918,8 @@ export default function Home() {
     if (!scene || !stage) return;
 
     const lenis = new Lenis({
-      duration: 1.2,
-      lerp: 0.1,
+      duration: isMobile ? 0.8 : 1.2,
+      lerp: isMobile ? 0.18 : 0.1,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
       direction: "vertical",
       gestureDirection: "vertical",
@@ -689,6 +944,25 @@ export default function Home() {
     let sectionBounds = { heroBottom: 0, theaterTop: 0, theaterBottom: 0, servicesTop: 0, servicesBottom: 0 };
     let baseCoords = { x: 0, y: 0 };
     let servicesShift = { x: 0, y: 0 };
+
+    // ── Cached mobile flag — read once, not every frame ──────────────────────
+    const isMobileRAF = window.innerWidth <= 768;
+
+    // ── Dirty-flag cache for DOM writes — only write when values actually change ─
+    let _cachedTransform = "";
+    let _cachedOpacity = "";
+    let _cachedBR = "";
+    let _cachedFlipRot = "";
+    let _cachedFilter = "";
+    let _cachedShaderOpacity = "";
+    let _cachedTextParallax = "";
+
+    const setStyleProp = (el, prop, val) => {
+      if (el.style.getPropertyValue(prop) !== val) el.style.setProperty(prop, val);
+    };
+    const setStyleDirect = (el, prop, val) => {
+      if (el.style[prop] !== val) el.style[prop] = val;
+    };
 
     const updateCoords = () => {
       const stageEl = stage;
@@ -717,14 +991,20 @@ export default function Home() {
         sectionBounds.servicesBottom = sRect.bottom + window.scrollY;
       }
 
-      // Compute base position (card's natural resting spot)
-      const originalTransform = stageEl.style.transform;
-      stageEl.style.transform = "none";
-      const stageRect = stageEl.getBoundingClientRect();
-      stageEl.style.transform = originalTransform;
-
-      baseCoords.x = stageRect.left + window.scrollX + stageRect.width / 2;
-      baseCoords.y = stageRect.top + window.scrollY + stageRect.height / 2;
+      // Compute base position (card's natural resting spot using parent container)
+      const parentEl = stageEl.parentElement;
+      if (parentEl) {
+        const parentRect = parentEl.getBoundingClientRect();
+        baseCoords.x = parentRect.left + window.scrollX + parentRect.width / 2;
+        baseCoords.y = parentRect.top + window.scrollY + parentRect.height / 2;
+      } else {
+        const originalTransform = stageEl.style.transform;
+        stageEl.style.transform = "none";
+        const stageRect = stageEl.getBoundingClientRect();
+        stageEl.style.transform = originalTransform;
+        baseCoords.x = stageRect.left + window.scrollX + stageRect.width / 2;
+        baseCoords.y = stageRect.top + window.scrollY + stageRect.height / 2;
+      }
 
       // Compute services-card-landing shift
       if (servicesLanding) {
@@ -760,13 +1040,16 @@ export default function Home() {
       const servicesBottomValTemp = sectionBounds.servicesBottom || (sectionBounds.theaterBottom || 0 + 1000);
       const servicesStickyEndTemp = servicesBottomValTemp - (typeof window !== 'undefined' ? window.innerHeight : 800);
 
+      // The top of the 3rd section (#services / infinite gallery)
+      const servicesTopVal = sectionBounds.servicesTop || 0;
+
       // Reset state at the absolute top
       if (scroll < 10) {
         hasDisappearedRef.current = false;
       }
 
-      // If we scroll past the end of the services sticky track, mark as permanently disappeared
-      if (scroll >= servicesStickyEndTemp - 50) {
+      // Once the cursor enters the 3rd section, mark as permanently disappeared
+      if (servicesTopVal > 0 && scroll >= servicesTopVal + 180) {
         hasDisappearedRef.current = true;
       }
 
@@ -778,8 +1061,7 @@ export default function Home() {
       }
 
       stageEl.style.display = "block";
-      const mobileBreakpoint = 768;
-      const isMobileView = window.innerWidth <= mobileBreakpoint;
+      const isMobileView = isMobileRAF;
       
       const { heroBottom, theaterTop: theaterTopBound, theaterBottom: theaterBottomBound, servicesBottom } = sectionBounds;
 
@@ -799,6 +1081,34 @@ export default function Home() {
       const servicesExitStart = servicesStickyEnd - 400;
       const servicesDisappearEnd = servicesStickyEnd - 50;
 
+      // ===== EARLY EXIT: 3rd section entry — dissolve pill into background =====
+      // As soon as scroll enters #services, fade+scale the cursor out over 180px
+      if (servicesTopVal > 0 && scroll >= servicesTopVal) {
+        const dissolveRange = 180;
+        const dissolveP = Math.min((scroll - servicesTopVal) / dissolveRange, 1);
+        // Ease-in-out for a smooth, non-jarring vanish
+        const dissolveEase = dissolveP * dissolveP * (3 - 2 * dissolveP);
+        const dissolveOpacity = 1 - dissolveEase;
+        const dissolveScale = 0.3 * (1 - dissolveEase * 0.6); // shrinks from pill size to dot
+
+        setStyleDirect(stageEl, 'position', 'fixed');
+        setStyleDirect(stageEl, 'top', '0');
+        setStyleDirect(stageEl, 'left', '0');
+        setStyleDirect(stageEl, 'zIndex', '100');
+        stageEl.classList.remove("is-locked");
+        const newFilter = `blur(${dissolveEase * 6}px)`;
+        if (stageEl.style.filter !== newFilter) stageEl.style.filter = newFilter;
+
+        const stageW = stageEl.offsetWidth || 300;
+        const stageH = stageEl.offsetHeight || 300;
+        // Stay centered on screen as it dissolves
+        stageEl.style.transform = `translate3d(${window.innerWidth / 2 - stageW / 2}px, ${window.innerHeight / 2 - stageH / 2}px, 0) scale(${dissolveScale})`;
+        stageEl.style.setProperty("--stage-opacity", `${dissolveOpacity}`);
+        stageEl.style.setProperty("--card-border-radius", "50%");
+        stageEl.style.pointerEvents = "none";
+        return;
+      }
+
       let x = 0;
       let y = 0;
       let rotation = 0;
@@ -811,53 +1121,73 @@ export default function Home() {
       let circleP = 0;
 
       if (isMobileView) {
-        // MOBILE ONLY: Fixed path, smooth Z-axis fade out in section 3
-        isFixed = true;
-        currentFixedX = window.innerWidth / 2;
-        currentFixedY = window.innerHeight / 2;
-        stage.style.position = "fixed";
-        stage.style.top = "0";
-        stage.style.left = "0";
-        stage.style.zIndex = "9999";
-        stage.classList.remove("is-locked");
-
         const morphOffset = 200;
         const morphStartZone = Math.max(0, theaterTop - morphOffset);
 
         if (scroll < morphStartZone) {
           phase = "hero";
+          isFixed = false;
           rotation = (scroll / Math.max(1, morphStartZone)) * 180;
           scale = 1;
           borderRadius = 0;
           opacity = 1;
           stage.style.filter = "none";
-        } else if (scroll < theaterTop) {
-          phase = "hero";
-          rotation = 180;
-          const morphEase = (scroll - morphStartZone) / (theaterTop - morphStartZone);
-          borderRadius = morphEase * 50;
-          scale = 1 - morphEase * 0.45;
-          opacity = 1;
-          stage.style.filter = "none";
-        } else if (scroll < theaterExitStart) {
-          phase = "theater";
-          rotation = 180;
-          borderRadius = 50;
-          scale = 0.55;
-          opacity = 1;
-          stage.style.filter = "none";
-        } else {
-          phase = "services";
-          rotation = 180;
-          borderRadius = 0; // Rectangle only, not rounded
           
-          const p = Math.min(Math.max((scroll - theaterExitStart) / Math.max(1, servicesDisappearEnd - theaterExitStart), 0), 1);
-          // Scale down, fade out, and blur out by 45% of the scroll range to blend in perfectly
-          const fadeProgress = Math.min(Math.max(p / 0.45, 0), 1);
-          scale = 0.55 * (1 - fadeProgress);
-          opacity = 1 - fadeProgress;
-          const blurAmount = fadeProgress * 8; // Max blur of 8px to simulate depth of field
-          stage.style.filter = blurAmount > 0 ? `blur(${blurAmount}px)` : "none";
+          x = 0;
+          y = 0;
+
+          stage.style.position = "absolute";
+          stage.style.top = "50%";
+          stage.style.left = "50%";
+          stage.style.zIndex = "100";
+          stage.classList.remove("is-locked");
+        } else {
+          isFixed = true;
+          currentFixedX = window.innerWidth / 2;
+          
+          stage.style.position = "fixed";
+          stage.style.top = "0";
+          stage.style.left = "0";
+          stage.style.zIndex = "9999";
+          stage.classList.remove("is-locked");
+
+          if (scroll < theaterTop) {
+            phase = "hero";
+            rotation = 180;
+            const morphEase = (scroll - morphStartZone) / (theaterTop - morphStartZone);
+            borderRadius = morphEase * 50;
+            scale = 1 - morphEase * 0.45;
+            opacity = 1;
+            stage.style.filter = "none";
+            
+            // Smoothly interpolate from the scroll-aligned position to the center of the viewport
+            const startY = baseCoords.y - morphStartZone;
+            const targetY = window.innerHeight / 2;
+            currentFixedY = startY + (targetY - startY) * morphEase;
+          } else if (scroll < theaterExitStart) {
+            phase = "theater";
+            rotation = 180;
+            borderRadius = 50;
+            scale = 0.55;
+            opacity = 1;
+            stage.style.filter = "none";
+            
+            currentFixedY = window.innerHeight / 2;
+          } else {
+            phase = "services";
+            rotation = 180;
+            borderRadius = 0; // Rectangle only, not rounded
+            
+            const p = Math.min(Math.max((scroll - theaterExitStart) / Math.max(1, servicesDisappearEnd - theaterExitStart), 0), 1);
+            // Scale down, fade out, and blur out by 45% of the scroll range to blend in perfectly
+            const fadeProgress = Math.min(Math.max(p / 0.45, 0), 1);
+            scale = 0.55 * (1 - fadeProgress);
+            opacity = 1 - fadeProgress;
+            const blurAmount = fadeProgress * 8; // Max blur of 8px to simulate depth of field
+            stage.style.filter = blurAmount > 0 ? `blur(${blurAmount}px)` : "none";
+            
+            currentFixedY = window.innerHeight / 2;
+          }
         }
       } else {
         // ===== DESKTOP LOGIC =====
@@ -892,6 +1222,11 @@ export default function Home() {
             smoothMouse.x = viewCenterX;
             smoothMouse.y = cardViewportY;
 
+            stage.style.position = "absolute";
+            stage.style.top = "50%";
+            stage.style.left = "50%";
+            stage.style.zIndex = "100";
+            stage.classList.remove("is-locked");
           } else {
             // ----- PHASE 1b: Card morphs to pill -----
             rotation = 180; // fully flipped
@@ -920,13 +1255,13 @@ export default function Home() {
 
             x = targetViewportX - (window.innerWidth / 2);
             y = (targetViewportY + scroll) - baseCoords.y;
-          }
 
-          stage.classList.remove("is-locked");
-          stage.style.position = "absolute";
-          stage.style.top = "50%";
-          stage.style.left = "50%";
-          stage.style.zIndex = "100";
+            stage.classList.remove("is-locked");
+            stage.style.position = "absolute";
+            stage.style.top = "50%";
+            stage.style.left = "50%";
+            stage.style.zIndex = "100";
+          }
 
         } else if (scroll >= theaterMorphStart && scroll < theaterExitStart) {
           // ===== PHASE 2: Theater (pill follows cursor on desktop) =====
@@ -1018,53 +1353,15 @@ export default function Home() {
           stage.style.left = "50%";
           stage.style.zIndex = "100";
         } else {
-          // ===== PHASE 4: Bloom — pill expands like a portal and merges with the gallery =====
+          // ===== PHASE 4: Legacy bloom path (no longer reached — 3rd section entry handled above) =====
+          // This branch is kept as a fallback in case servicesTop is not yet measured.
           phase = "services";
           rotation = 180;
           circleP = 0;
           isFixed = true;
           stage.classList.remove("is-locked");
-
-          const vanishP = Math.min(Math.max((scroll - servicesExitStart) / (servicesDisappearEnd - servicesExitStart), 0), 1);
-          // Cubic ease for smooth bloom
-          const vanishEase = vanishP * vanishP * (3 - 2 * vanishP);
-
-          // BLOOM: scale expands outward (1 → 3.5) instead of shrinking
-          scale = 1 + vanishEase * 2.5;
-
-          // Border-radius: stay circular through most of bloom, then dissolve toward 0 at the end
-          // This makes it look like the circle "bursts" open into a rectangle (the gallery frame)
-          const radiusCollapse = Math.max(0, (vanishP - 0.55) / 0.45); // 0→1 only in final 45%
-          borderRadius = 50 * (1 - radiusCollapse * radiusCollapse);
-
-          // Fade — starts at 20% progress, completes at 90%
-          const opacityP = Math.min(Math.max((vanishP - 0.1) / 0.8, 0), 1);
-          opacity = 1 - opacityP * opacityP; // ease-in fade so bloom is visible longer
-
-          // Stay fixed at viewport center — the pill becomes the gallery's vanishing point
-          currentFixedX = window.innerWidth / 2;
-          currentFixedY = window.innerHeight / 2;
-
-          stage.style.position = "fixed";
-          stage.style.top = "0";
-          stage.style.left = "0";
-          stage.style.zIndex = "100";
-
-          // Fail-safe: completely hide stage card if bloom is fully complete or scroll is past sticky end
-          if (vanishP >= 1.0 || scroll >= servicesStickyEnd - 50) {
-            opacity = 0;
-            isFixed = false;
-            stage.style.display = "none";
-          }
-
-          // Drive the gallery bloom ripple reveal via data attribute
-          const galleryEl = document.getElementById("services");
-          if (galleryEl) {
-            galleryEl.dataset.bloomP = vanishEase.toFixed(3);
-            // The clip-path reveal is driven by CSS custom property
-            const revealRadius = vanishEase * 180; // 0% → 180% of viewport diagonal
-            galleryEl.style.setProperty("--gallery-reveal-r", `${revealRadius}vmax`);
-          }
+          opacity = 0;
+          stage.style.display = "none";
         }
       }
 
@@ -1114,7 +1411,11 @@ export default function Home() {
       // Fade the red smoke background (ShaderBackground) to black directly as we scroll to the video
       const shaderBg = document.querySelector(".hero-bg");
       if (shaderBg) {
-        shaderBg.style.opacity = (1 - blendEase).toString();
+        const newShaderOpacity = (1 - blendEase).toFixed(3);
+        if (_cachedShaderOpacity !== newShaderOpacity) {
+          shaderBg.style.opacity = newShaderOpacity;
+          _cachedShaderOpacity = newShaderOpacity;
+        }
       }
 
       // Boxy grid interactive scroll transition classes
@@ -1168,9 +1469,13 @@ export default function Home() {
 
       stage.style.pointerEvents = opacity <= 0.05 ? "none" : "auto";
 
-      // Text parallax
+      // Text parallax — only write if value changed meaningfully
       const textParallaxP = Math.min(Math.max(scroll / (sectionBounds.theaterTop || window.innerHeight), 0), 1);
-      scene.style.setProperty("--text-parallax", `${textParallaxP * 180}px`);
+      const newTextParallax = `${Math.round(textParallaxP * 180)}px`;
+      if (_cachedTextParallax !== newTextParallax) {
+        scene.style.setProperty("--text-parallax", newTextParallax);
+        _cachedTextParallax = newTextParallax;
+      }
 
       stage.dataset.phase = phase; 
       scene.classList.toggle("card-over-video", scroll > 10);
@@ -1180,10 +1485,32 @@ export default function Home() {
 
     let lastScroll = 0;
     let rafId = 0;
+    // Mobile: throttle to ~30fps to halve CPU cost
+    const RAF_INTERVAL = isMobileRAF ? 1000 / 30 : 0;
+    let lastRafTime = 0;
+
     const raf = (time) => {
+      // Throttle on mobile
+      if (RAF_INTERVAL > 0 && time - lastRafTime < RAF_INTERVAL) {
+        rafId = window.requestAnimationFrame(raf);
+        return;
+      }
+      lastRafTime = time;
+
       lenis.raf(time);
       const currentScroll = Math.max(lenis.scroll || 0, window.scrollY || 0);
       updateHeroMotion(currentScroll);
+
+      // Check if services section is active to trigger text entrance animation
+      const servicesTopBound = sectionBounds.servicesTop || 0;
+      const servicesBottomBound = sectionBounds.servicesBottom || 0;
+      if (servicesTopBound && servicesBottomBound) {
+        const isActive = currentScroll >= (servicesTopBound - 350) && currentScroll < (servicesBottomBound - 150);
+        if (isActive !== isServicesTextVisibleRef.current) {
+          isServicesTextVisibleRef.current = isActive;
+          setIsServicesTextVisible(isActive);
+        }
+      }
 
       // Scroll bound triggers between #services and #media-carousel
       const { servicesBottom } = sectionBounds;
@@ -1236,6 +1563,7 @@ export default function Home() {
   return (
     <div className="site-shell" onClick={() => { if (gyroPermission === "pending") requestGyro(); }}>
       <main>
+
         <div className="hero-scene" id="home" aria-labelledby="hero-title" ref={heroSceneRef}>
           <ShaderBackground className="hero-bg" smokeColor="#E3142A" />
           <section className="hero">
@@ -1491,20 +1819,82 @@ export default function Home() {
                   </filter>
                 </defs>
               </svg>
-              <p className="gallery-brutalist-meta gallery-brutalist-meta--left gallery-brutalist-worn gallery-brutalist-worn--light">
+              <motion.p 
+                className="gallery-brutalist-meta gallery-brutalist-meta--left gallery-brutalist-worn gallery-brutalist-worn--light"
+                variants={metaLeftVariants}
+                initial="hidden"
+                animate={isServicesTextVisible ? "visible" : "hidden"}
+              >
                 Powered by God
-              </p>
-              <p className="gallery-brutalist-meta gallery-brutalist-meta--right gallery-brutalist-worn gallery-brutalist-worn--light">
+              </motion.p>
+              <motion.p 
+                className="gallery-brutalist-meta gallery-brutalist-meta--right gallery-brutalist-worn gallery-brutalist-worn--light"
+                variants={metaRightVariants}
+                initial="hidden"
+                animate={isServicesTextVisible ? "visible" : "hidden"}
+              >
                 Art with purpose
-              </p>
-              <div className="gallery-overlay-text">
-                <h2 className="gallery-quote gallery-brutalist-worn gallery-brutalist-worn--heavy">
-                  <span className="gallery-quote-line">I only fear god.</span>
-                  <span className="gallery-quote-line">The rest of them</span>
-                  <span className="gallery-quote-line">bleed like me.</span>
+              </motion.p>
+              <div className="gallery-overlay-text" ref={quoteRef}>
+                <h2 className={`gallery-quote gallery-brutalist-worn gallery-brutalist-worn--heavy ${isServicesTextVisible ? 'is-active' : ''}`}>
+                  <span className="gallery-quote-line">
+                    {["I", "only", "fear", "god."].map((word, i) => (
+                      <span
+                        key={`w-1-${i}`}
+                        className="quote-word-item"
+                        style={{ opacity: 0 }}
+                      >
+                        {word}
+                      </span>
+                    ))}
+                  </span>
+                  <span className="gallery-quote-line">
+                    {["The", "rest", "of", "them"].map((word, i) => (
+                      <span
+                        key={`w-2-${i}`}
+                        className="quote-word-item"
+                        style={{ opacity: 0 }}
+                      >
+                        {word}
+                      </span>
+                    ))}
+                  </span>
+                  <span className="gallery-quote-line">
+                    {["bleed", "like", "me."].map((word, i) => {
+                      if (word === "bleed") {
+                        return (
+                          <span
+                            key={`w-3-${i}`}
+                            className="quote-word-item quote-word-bleed"
+                            style={{ opacity: 0 }}
+                          >
+                            {"bleed".split("").map((char, charIdx) => (
+                              <span key={charIdx} className="bleed-char" style={{ display: "inline-block" }}>
+                                {char}
+                              </span>
+                            ))}
+                          </span>
+                        );
+                      }
+                      return (
+                        <span
+                          key={`w-3-${i}`}
+                          className="quote-word-item"
+                          style={{ opacity: 0 }}
+                        >
+                          {word}
+                        </span>
+                      );
+                    })}
+                  </span>
                 </h2>
               </div>
-              <div className="gallery-brutalist-footer gallery-brutalist-worn gallery-brutalist-worn--light">
+              <motion.div 
+                className="gallery-brutalist-footer gallery-brutalist-worn gallery-brutalist-worn--light"
+                variants={galleryFooterVariants}
+                initial="hidden"
+                animate={isServicesTextVisible ? "visible" : "hidden"}
+              >
                 <span className="gallery-brutalist-star" aria-hidden="true">
                   ★
                 </span>
@@ -1513,7 +1903,7 @@ export default function Home() {
                     @idosomethinguseless
                   </span>
                 </p>
-              </div>
+              </motion.div>
             </div>
             <div className="services-card-landing" aria-hidden="true" />
           </div>
