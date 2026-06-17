@@ -54,40 +54,71 @@ const mediaCarouselItems = [
     type: "video",
     src: "https://player.vimeo.com/video/1197831287?background=1&autoplay=1&loop=1&muted=1",
     title: "DARKTRACE — THE DEFENDERS",
-    className: "media-card-video-landscape"
+    className: "media-card-video-landscape",
+    poster: "/images/Images_1/IMG_7013.PNG"
   },
   {
     type: "video",
     src: "https://player.vimeo.com/video/1197831230?background=1&autoplay=1&loop=1&muted=1",
     title: "POWERADE — THE ATHLETE'S CODE",
     className: "media-card-video-landscape",
-    rotate: 270
+    rotate: 270,
+    poster: "/images/Images_1/IMG_7012.PNG"
   },
   {
     type: "video",
     src: "https://player.vimeo.com/video/1197831232?background=1&autoplay=1&loop=1&muted=1",
     title: "SUPERBET — BET RESPONSIBLY",
     className: "media-card-video-landscape",
-    rotate: 270
+    rotate: 270,
+    poster: "/images/Images_1/IMG_7011 (1).PNG"
   },
   {
     type: "video",
     src: "https://player.vimeo.com/video/1197831233?background=1&autoplay=1&loop=1&muted=1",
     title: "HARMAN KARDON — SEE / HEAR",
-    className: "media-card-video-portrait"
+    className: "media-card-video-portrait",
+    poster: "/images/Images_1/IMG_6195.PNG"
   },
   {
     type: "video",
     src: "https://player.vimeo.com/video/1197831231?background=1&autoplay=1&loop=1&muted=1",
     title: "REVOLUT — MAKE YOUR MONEY MOVE",
-    className: "media-card-video-landscape"
+    className: "media-card-video-landscape",
+    poster: "/images/Images_1/IMG_3035.jpg"
   },
   {
     type: "video",
     src: "https://player.vimeo.com/video/1197780573?background=1&autoplay=1&loop=1&muted=1",
     title: "CINEMATIC SHOWREEL",
-    className: "media-card-video-landscape"
+    className: "media-card-video-landscape",
+    poster: "/images/Images_1/IMG_0227.JPG"
   }
+];
+
+const infiniteGalleryImages = [
+  "/images/Images_1/IMG_0227.JPG",
+  "/images/Images_1/IMG_3035.jpg",
+  "/images/Images_1/IMG_6195.PNG",
+  "/images/Images_1/IMG_7011 (1).PNG",
+  "/images/Images_1/IMG_7012.PNG",
+  "/images/Images_1/IMG_7013.PNG",
+  "/images/Images_1/WhatsApp Image 2026-06-18 at 12.49.02 AM.jpeg",
+  "/images/Images_1/WhatsApp Image 2026-06-18 at 12.49.04 AM (1).jpeg",
+  "/images/Images_1/WhatsApp Image 2026-06-18 at 12.49.04 AM (2).jpeg",
+  "/images/Images_1/WhatsApp Image 2026-06-18 at 12.49.04 AM.jpeg",
+  "/images/Images_1/WhatsApp Image 2026-06-18 at 12.49.05 AM.jpeg",
+  "/images/IMG_5775.PNG",
+  "/images/IMG_6471.jpg"
+];
+
+const reelImages = [
+  "/images/Images_1/IMG_7013.PNG",
+  "/images/Images_1/IMG_7012.PNG",
+  "/images/Images_1/IMG_7011 (1).PNG",
+  "/images/Images_1/IMG_6195.PNG",
+  "/images/Images_1/IMG_3035.jpg",
+  "/images/Images_1/IMG_0227.JPG"
 ];
 
 
@@ -1752,16 +1783,7 @@ export default function Home() {
         >
           <div className="infinite-gallery-container">
             <InfiniteGallery
-              images={[
-                "/images/reel/reel-1.png",
-                "/images/reel/reel-2.png",
-                "/images/reel/reel-3.png",
-                "/images/reel/reel-4.png",
-                "/images/reel/reel-5.png",
-                "/images/reel/reel-6.png",
-                "/images/IMG_5775.PNG",
-                "/images/IMG_6471.jpg"
-              ]}
+              images={infiniteGalleryImages}
               speed={1.2}
               zSpacing={3}
               visibleCount={12}
@@ -1947,13 +1969,16 @@ export default function Home() {
 
                 {/* Film frames */}
                 <div className="tape-frames">
-                  {[6, 5, 4, 3, 2, 1].map((n) => (
-                    <div className="tape-frame" key={n}>
-                      <img src={`/images/reel/reel-${n}.png`} alt={`Film frame ${n}`} loading="lazy" />
-                      <span className="tape-frame-num">{n}A</span>
-                      <span className="tape-frame-code">KODAK 5207</span>
-                    </div>
-                  ))}
+                  {reelImages.map((src, idx) => {
+                    const frameNum = 6 - idx;
+                    return (
+                      <div className="tape-frame" key={idx}>
+                        <img src={src} alt={`Film frame ${frameNum}`} loading="lazy" />
+                        <span className="tape-frame-num">{frameNum}A</span>
+                        <span className="tape-frame-code">KODAK 5207</span>
+                      </div>
+                    );
+                  })}
                 </div>
 
                 {/* Sprocket holes bottom edge — continuous */}

@@ -49,7 +49,15 @@ function FadeSlide({
 
   const getThumbnailSrc = (slideItem: VideoShowcaseItem, idx: number) => {
     if (slideItem.poster) return slideItem.poster;
-    return `/images/reel/reel-${(idx % 6) + 1}.png`;
+    const fallbacks = [
+      "/images/Images_1/IMG_7013.PNG",
+      "/images/Images_1/IMG_7012.PNG",
+      "/images/Images_1/IMG_7011 (1).PNG",
+      "/images/Images_1/IMG_6195.PNG",
+      "/images/Images_1/IMG_3035.jpg",
+      "/images/Images_1/IMG_0227.JPG"
+    ];
+    return fallbacks[idx % fallbacks.length];
   };
 
   // Instantiates the Vimeo Player exactly once on mount, cleans up on unmount
