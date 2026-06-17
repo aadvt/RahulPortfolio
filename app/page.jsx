@@ -528,7 +528,7 @@ export default function Home() {
 
       // Reset states
       gsap.set(words, { opacity: 0, y: 0, x: 0, scale: 1, skewX: 0, skewY: 0, filter: "none", clipPath: "none" });
-      const bleedChars = words[8]?.querySelectorAll(".bleed-char");
+      const bleedChars = words[3]?.querySelectorAll(".bleed-char");
       if (bleedChars && bleedChars.length > 0) {
         gsap.set(bleedChars, { opacity: 0, x: 0, textShadow: "none" });
       }
@@ -546,153 +546,90 @@ export default function Home() {
         ease: "none"
       }, 0);
 
-      // 1. "only" - Guillotine drop
-      tl.fromTo(words[1], 
-        { y: -80, opacity: 0 },
-        { y: 0, opacity: 1, duration: 0.35, ease: "power4.out" },
-        0.08
-      );
-
-      // 2. "fear" - Horizontal plate slam from left
-      tl.fromTo(words[2],
-        { x: -100, skewX: -20, opacity: 0 },
-        { x: 0, skewX: 0, opacity: 1, duration: 0.4, ease: "power3.out" },
-        0.14
-      );
-
-      // 3. "god." - Intense flash + scale slam + red shake
-      tl.fromTo(words[3],
-        { scale: 2.2, opacity: 0 },
-        { 
-          scale: 1.15, 
-          opacity: 1, 
-          duration: 0.35, 
-          ease: "power4.inOut",
-          onComplete: () => {
-            gsap.to(words[3], {
-              x: 6,
-              repeat: 5,
-              yoyo: true,
-              duration: 0.04,
-              clearProps: "x"
-            });
-          }
-        },
-        0.22
-      );
-
-      // 4. "The" - Optical blur-snap
-      tl.fromTo(words[4],
-        { filter: "blur(18px)", scale: 1.3, opacity: 0 },
-        { filter: "blur(0px)", scale: 1, opacity: 0.95, duration: 0.48, ease: "power2.out" },
-        0.28
-      );
-
-      // 5. "rest" - Straight heavy slide up
-      tl.fromTo(words[5],
-        { y: 70, opacity: 0 },
-        { y: 0, opacity: 1, duration: 0.42, ease: "power3.out" },
-        0.34
-      );
-
-      // 6. "of" - Instant pop
-      tl.fromTo(words[6],
-        { scale: 0.3, opacity: 0 },
-        { scale: 0.9, opacity: 0.9, duration: 0.28, ease: "power1.out" },
-        0.4
-      );
-
-      // 7. "them" - Guillotine crop reveal (wipes up from bottom)
-      tl.fromTo(words[7],
-        { clipPath: "inset(100% 0 0 0)", opacity: 0 },
-        { clipPath: "inset(0% 0 0 0)", opacity: 1, duration: 0.44, ease: "power4.out" },
-        0.46
-      );
-
-      // 8. "bleed" - Full chromatic aberration glitch with letter stagger
-      tl.set(words[8], { opacity: 1, x: 0, skewX: 0 }, 0.52);
-      const chars = words[8]?.querySelectorAll(".bleed-char");
-      if (chars && chars.length > 0) {
-        chars.forEach((char, index) => {
-          const charTl = gsap.timeline();
-          charTl
-            .to(char, { opacity: 1, duration: 0.01 })
-            .to(char, {
-              x: -8,
-              duration: 0.04,
-              ease: "none",
-              onUpdate: function() {
-                const progress = this.progress();
-                const r = Math.round(-8 + progress * 8);
-                char.style.textShadow = `
-                  ${r - 6}px 0 0 rgba(255,0,0,0.85),
-                  ${-r + 6}px 0 0 rgba(0,0,255,0.7),
-                  0 0 35px rgba(255,0,0,0.4)
-                `;
-              }
-            })
-            .to(char, { x: 10, duration: 0.03, ease: "none",
-              onUpdate: function() {
-                char.style.textShadow = `10px 0 0 rgba(255,0,0,0.9), -10px 0 0 rgba(0,0,255,0.8), 0 0 40px rgba(255,0,0,0.5)`;
-              }
-            })
-            .to(char, { opacity: 0, duration: 0.02 })
-            .to(char, { x: -5, opacity: 1, duration: 0.02, ease: "none",
-              onUpdate: function() {
-                char.style.textShadow = `-5px 0 0 rgba(255,0,0,0.95), 5px 0 0 rgba(0,0,255,0.85)`;
-              }
-            })
-            .to(char, { x: 7, duration: 0.03, ease: "none",
-              onUpdate: function() {
-                char.style.textShadow = `7px 0 0 rgba(255,0,0,0.8), -7px 0 0 rgba(0,0,255,0.7)`;
-              }
-            })
-            .to(char, { opacity: 0, duration: 0.025 })
-            .to(char, { opacity: 1, x: -3, duration: 0.02,
-              onUpdate: function() {
-                char.style.textShadow = `-3px 0 0 rgba(255,0,0,0.7), 3px 0 0 rgba(0,0,255,0.6)`;
-              }
-            })
-            .to(char, {
-              x: 0,
-              duration: 0.22,
-              ease: "power3.out",
-              onUpdate: function() {
-                const p = this.progress();
-                const offset = Math.round((1 - p) * 3);
-                char.style.textShadow = `
-                  ${offset}px 0 0 rgba(160,0,0,${0.45 * (1-p)}),
-                  ${-offset}px 0 0 rgba(255,30,30,${0.2 * (1-p)}),
-                  0 0 ${42 * (1-p) + 8}px rgba(255,0,0,${0.18 + 0.12 * (1-p)})
-                `;
-              },
-              onComplete: function() {
-                char.style.textShadow = "";
-              }
-            });
-          tl.add(charTl, 0.52 + index * 0.06);
-        });
+      // 1. "AM" - Guillotine drop
+      if (words[1]) {
+        tl.fromTo(words[1], 
+          { y: -80, opacity: 0 },
+          { y: 0, opacity: 1, duration: 0.35, ease: "power4.out" },
+          0.08
+        );
       }
 
-      // 9. "like" - Laser pop-in
-      tl.fromTo(words[9],
-        { scale: 1.4, opacity: 0 },
-        { scale: 1, opacity: 0.9, duration: 0.32, ease: "power2.out" },
-        0.6
-      );
+      // 2. "THE" - Horizontal plate slam from left
+      if (words[2]) {
+        tl.fromTo(words[2],
+          { x: -100, skewX: -20, opacity: 0 },
+          { x: 0, skewX: 0, opacity: 1, duration: 0.4, ease: "power3.out" },
+          0.14
+        );
+      }
 
-      // 10. "me." - Heavy final stamp zoom
-      tl.fromTo(words[10],
-        { scale: 2.8, y: -30, opacity: 0 },
-        { 
-          scale: 1.25, 
-          y: -4, 
-          opacity: 1, 
-          duration: 0.38, 
-          ease: "power4.out"
-        },
-        0.66
-      );
+      // 3. "UNIVERSE" - Full chromatic aberration glitch with letter stagger
+      if (words[3]) {
+        tl.set(words[3], { opacity: 1, x: 0, skewX: 0 }, 0.22);
+        const chars = words[3]?.querySelectorAll(".bleed-char");
+        if (chars && chars.length > 0) {
+          chars.forEach((char, index) => {
+            const charTl = gsap.timeline();
+            charTl
+              .to(char, { opacity: 1, duration: 0.01 })
+              .to(char, {
+                x: -8,
+                duration: 0.04,
+                ease: "none",
+                onUpdate: function() {
+                  const progress = this.progress();
+                  const r = Math.round(-8 + progress * 8);
+                  char.style.textShadow = `
+                    ${r - 6}px 0 0 rgba(255,0,0,0.85),
+                    ${-r + 6}px 0 0 rgba(0,0,255,0.7),
+                    0 0 35px rgba(255,0,0,0.4)
+                  `;
+                }
+              })
+              .to(char, { x: 10, duration: 0.03, ease: "none",
+                onUpdate: function() {
+                  char.style.textShadow = `10px 0 0 rgba(255,0,0,0.9), -10px 0 0 rgba(0,0,255,0.8), 0 0 40px rgba(255,0,0,0.5)`;
+                }
+              })
+              .to(char, { opacity: 0, duration: 0.02 })
+              .to(char, { x: -5, opacity: 1, duration: 0.02, ease: "none",
+                onUpdate: function() {
+                  char.style.textShadow = `-5px 0 0 rgba(255,0,0,0.95), 5px 0 0 rgba(0,0,255,0.85)`;
+                }
+              })
+              .to(char, { x: 7, duration: 0.03, ease: "none",
+                onUpdate: function() {
+                  char.style.textShadow = `7px 0 0 rgba(255,0,0,0.8), -7px 0 0 rgba(0,0,255,0.7)`;
+                }
+              })
+              .to(char, { opacity: 0, duration: 0.025 })
+              .to(char, { opacity: 1, x: -3, duration: 0.02,
+                onUpdate: function() {
+                  char.style.textShadow = `-3px 0 0 rgba(255,0,0,0.7), 3px 0 0 rgba(0,0,255,0.6)`;
+                }
+              })
+              .to(char, {
+                x: 0,
+                duration: 0.22,
+                ease: "power3.out",
+                onUpdate: function() {
+                  const p = this.progress();
+                  const offset = Math.round((1 - p) * 3);
+                  char.style.textShadow = `
+                    ${offset}px 0 0 rgba(160,0,0,${0.45 * (1-p)}),
+                    ${-offset}px 0 0 rgba(255,30,30,${0.2 * (1-p)}),
+                    0 0 ${42 * (1-p) + 8}px rgba(255,0,0,${0.18 + 0.12 * (1-p)})
+                  `;
+                },
+                onComplete: function() {
+                  char.style.textShadow = "";
+                }
+              });
+            tl.add(charTl, 0.22 + index * 0.06);
+          });
+        }
+      }
 
     } else {
       const allBleedChars = quoteRef.current?.querySelectorAll(".bleed-char");
@@ -1866,7 +1803,7 @@ export default function Home() {
               <div className="gallery-overlay-text" ref={quoteRef}>
                 <h2 className={`gallery-quote gallery-brutalist-worn gallery-brutalist-worn--heavy ${isServicesTextVisible ? 'is-active' : ''}`}>
                   <span className="gallery-quote-line">
-                    {["I", "only", "fear", "god."].map((word, i) => (
+                    {["I", "AM"].map((word, i) => (
                       <span
                         key={`w-1-${i}`}
                         className="quote-word-item"
@@ -1877,7 +1814,7 @@ export default function Home() {
                     ))}
                   </span>
                   <span className="gallery-quote-line">
-                    {["The", "rest", "of", "them"].map((word, i) => (
+                    {["THE"].map((word, i) => (
                       <span
                         key={`w-2-${i}`}
                         className="quote-word-item"
@@ -1888,32 +1825,19 @@ export default function Home() {
                     ))}
                   </span>
                   <span className="gallery-quote-line">
-                    {["bleed", "like", "me."].map((word, i) => {
-                      if (word === "bleed") {
-                        return (
-                          <span
-                            key={`w-3-${i}`}
-                            className="quote-word-item quote-word-bleed"
-                            style={{ opacity: 0 }}
-                          >
-                            {"bleed".split("").map((char, charIdx) => (
-                              <span key={charIdx} className="bleed-char" style={{ display: "inline-block" }}>
-                                {char}
-                              </span>
-                            ))}
+                    {["UNIVERSE"].map((word, i) => (
+                      <span
+                        key={`w-3-${i}`}
+                        className="quote-word-item"
+                        style={{ opacity: 0 }}
+                      >
+                        {"UNIVERSE".split("").map((char, charIdx) => (
+                          <span key={charIdx} className="bleed-char" style={{ display: "inline-block" }}>
+                            {char}
                           </span>
-                        );
-                      }
-                      return (
-                        <span
-                          key={`w-3-${i}`}
-                          className="quote-word-item"
-                          style={{ opacity: 0 }}
-                        >
-                          {word}
-                        </span>
-                      );
-                    })}
+                        ))}
+                      </span>
+                    ))}
                   </span>
                 </h2>
               </div>
@@ -2032,26 +1956,21 @@ export default function Home() {
               <span className="footer-value">AVAILABLE FOR FREELANCE & CONTRACT</span>
             </div>
             <div className="footer-col">
-              <span className="footer-label">LOCAL TIME</span>
-              <span className="footer-value">{localTime}</span>
             </div>
             <div className="footer-col align-right">
               <span className="footer-label">SAY HELLO</span>
-              <a href="mailto:hello@rahul.design" className="footer-email">HELLO@RAHUL.DESIGN</a>
+              <a href="mailto:Rahulcdf17@gmail.com" className="footer-email">RAHULCDF17@GMAIL.COM</a>
             </div>
           </div>
 
           <div className="footer-title-wrap">
-            <h2 className="footer-title">RAHUL®</h2>
+            <h2 className="footer-title">RAHUL</h2>
           </div>
 
           <div className="footer-bottom">
             <p className="footer-copy">©2026 RAHUL. ALL RIGHTS RESERVED.</p>
             <div className="footer-socials">
-              <a href="https://x.com/home" target="_blank" rel="noreferrer">TWITTER/X</a>
-              <a href="https://www.instagram.com/" target="_blank" rel="noreferrer">INSTAGRAM</a>
-              <a href="https://www.behance.net/" target="_blank" rel="noreferrer">BEHANCE</a>
-              <a href="https://dribbble.com/" target="_blank" rel="noreferrer">DRIBBBLE</a>
+              <a href="https://www.instagram.com/l1llred" target="_blank" rel="noreferrer">INSTAGRAM</a>
             </div>
           </div>
         </motion.div>

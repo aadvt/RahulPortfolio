@@ -555,21 +555,7 @@ export default function FullscreenVideoShowcase({
           ))}
         </div>
 
-        {/* Vertical Scrolling Titles Stack */}
-        <motion.div
-          className="fvs-text-scroll-container"
-          style={{ y: textY }}
-        >
-          {items.map((item, idx) => (
-            <FadeText
-              key={idx}
-              title={item.title}
-              index={idx}
-              totalItems={items.length}
-              scrollYProgress={scrollYProgress}
-            />
-          ))}
-        </motion.div>
+
 
         {/* Side Numbers Navigation Progress indicator */}
         <div className="fvs-indicator-pill">
@@ -598,7 +584,7 @@ export default function FullscreenVideoShowcase({
 
         {/* Footer info bar */}
         <div className="fvs-footer-info">
-          <span className="fvs-footer-left">SCROLL TO NAVIGATE</span>
+          <span className="fvs-footer-left">TAP TO FULLSCREEN</span>
           <span className="fvs-footer-right">
             FEATURED STORIES — {String(activeIndex + 1).padStart(2, "0")}/
             {String(items.length).padStart(2, "0")}

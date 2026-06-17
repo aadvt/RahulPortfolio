@@ -4597,7 +4597,7 @@ section {
 
 .dsf-section {
   position: relative;
-  height: calc(4 * 900px + 100vh);
+  height: calc(3 * 900px + 100vh);
   background: #000;
 }
 
@@ -4893,7 +4893,7 @@ section {
 /* ── Mobile ── */
 @media (max-width: 768px) {
   .dsf-section {
-    height: calc(4 * 700px + 100vh);
+    height: calc(3 * 700px + 100vh);
   }
 
   .dsf-sticky {

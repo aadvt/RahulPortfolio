@@ -8,36 +8,28 @@ gsap.registerPlugin(ScrollTrigger);
 
 const reviews = [
   {
-    name: "Sarah Mitchell",
-    role: "Founder, Lumiere Skincare",
+    name: "Dr. Red",
+    role: "",
     avatar: "/images/avatar-sarah.png",
     quote:
-      "Working with Rahul was a game-changer. He took our vision and elevated it with sleek design and a seamless experience. Our conversions went up 40% after launch.",
+      "Creative, adaptable, and always improving. His editing has become increasingly refined and professional, making him a valuable asset to any project.",
     index: "01",
   },
   {
-    name: "Daniel Kim",
-    role: "Creative Director, Nova",
+    name: "Honey K",
+    role: "",
     avatar: "/images/avatar-daniel.png",
     quote:
-      "We needed high-quality 3D modeling for client presentations and Rahul delivered beyond expectations. His attention to detail brought our ideas to life in extraordinary ways.",
+      "Smooth transitions, perfect timing, and incredible energy. His edits keep viewers engaged from start to finish.",
     index: "02",
   },
   {
-    name: "Maria Lopez",
-    role: "Marketing Manager, GreenVibe",
+    name: "TFOX",
+    role: "",
     avatar: "/images/avatar-maria.png",
     quote:
-      "Rahul redesigned our website and gave our brand a much-needed refresh. The process was smooth, creative, and collaborative. He truly understands both design and business.",
+      "The attention to detail in every edit is what stands out most. Every project feels thoughtful and well-crafted.",
     index: "03",
-  },
-  {
-    name: "Jason Reed",
-    role: "CEO, TechForge Solutions",
-    avatar: "/images/avatar-jason.png",
-    quote:
-      "From UI/UX to full-stack development, Rahul handled our SaaS dashboard like a pro. His expertise is unmatched. The performance and design speak for themselves.",
-    index: "04",
   },
 ];
 
@@ -167,7 +159,7 @@ export default function DualStackFeedback() {
           <div className="dsf-progress-track">
             <div className="dsf-progress-fill" />
           </div>
-          <span className="dsf-counter">04 REVIEWS</span>
+          <span className="dsf-counter">03 REVIEWS</span>
         </div>
 
         {/* Headline */}
