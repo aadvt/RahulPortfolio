@@ -1035,9 +1035,8 @@ export default function Home() {
       const servicesSettleEnd = theaterExitEnd; 
       
       const servicesBottomVal = servicesBottom || (theaterBottom + 1000);
-      const servicesStickyEnd = servicesBottomVal - (typeof window !== 'undefined' ? window.innerHeight : 800);
-      const servicesExitStart = servicesStickyEnd - 400;
-      const servicesDisappearEnd = servicesStickyEnd - 50;
+      const servicesExitStart = theaterExitEnd + 350;
+
 
       let x = 0;
       let y = 0;
@@ -1160,10 +1159,11 @@ export default function Home() {
         stageEl.style.zIndex = "9999";
 
       } else if (scroll >= theaterExitStart && scroll < theaterExitEnd) {
-        // ===== PHASE 3: Entering Services (Snap & Lock) =====
+        // ===== PHASE 3: Entering Services (Snap to Center) =====
         phase = "services-snap";
         isFixed = true;
         rotation = 180;
+        stageEl.classList.remove("is-locked");
 
         const snapP = Math.min(Math.max((scroll - theaterExitStart) / (theaterExitEnd - theaterExitStart), 0), 1);
         const snapEase = snapP * snapP * (3 - 2 * snapP);
@@ -1171,29 +1171,17 @@ export default function Home() {
         // Morph from circle back to rectangle
         circleP = 1 - snapEase;
         borderRadius = (1 - snapEase) * 50;
-        scale = circleScale + snapEase * (1 - circleScale);
+        
+        // Scale down to a small card size (e.g. 0.3)
+        scale = circleScale + snapEase * (0.3 - circleScale);
 
-        // Target viewport position for the landing spot
-        const landingViewportX = (baseCoords.x + servicesShift.x);
-        const landingViewportY = (baseCoords.y + servicesShift.y) - scroll;
+        // Target viewport position: center of the screen
+        const landingViewportX = window.innerWidth / 2;
+        const landingViewportY = window.innerHeight / 2;
 
-        // Smoothly move from captured snapStartMouse to landing spot
+        // Smoothly move from captured snapStartMouse to center of the screen
         currentFixedX = snapStartMouse.x + (landingViewportX - snapStartMouse.x) * snapEase;
         currentFixedY = snapStartMouse.y + (landingViewportY - snapStartMouse.y) * snapEase;
-
-        if (snapP > 0.85) {
-          currentFixedX = landingViewportX;
-          currentFixedY = landingViewportY;
-        }
-
-        if (snapP > 0.95) {
-          if (!stageEl.classList.contains("is-locked")) {
-            lockImpactTime = Date.now();
-          }
-          stageEl.classList.add("is-locked");
-        } else {
-          stageEl.classList.remove("is-locked");
-        }
 
         stageEl.style.position = "fixed";
         stageEl.style.top = "0";
@@ -1201,23 +1189,33 @@ export default function Home() {
         stageEl.style.zIndex = "9999";
 
       } else if (scroll < servicesExitStart) {
-        // ===== PHASE 3.5: Services section (Locked in place) =====
-        phase = "services";
+        // ===== PHASE 3.5: Falling into the Abyss =====
+        phase = "services-abyss";
+        isFixed = true;
         rotation = 180;
         borderRadius = 0;
         circleP = 0;
-        scale = 1;
-        stageEl.classList.add("is-locked");
+        stageEl.classList.remove("is-locked");
 
-        x = servicesShift.x;
-        y = servicesShift.y;
+        const abyssP = Math.min(Math.max((scroll - theaterExitEnd) / (servicesExitStart - theaterExitEnd), 0), 1);
+        const abyssEase = abyssP * abyssP * (3 - 2 * abyssP); // smoothstep
 
-        stageEl.style.position = "absolute";
-        stageEl.style.top = "50%";
-        stageEl.style.left = "50%";
-        stageEl.style.zIndex = "100";
+        // Shrink, fade, and blur to look like it is receding into depth
+        scale = 0.3 * (1 - abyssEase);
+        opacity = 1 - abyssEase;
+        const blurAmount = abyssEase * 8;
+        stageEl.style.filter = blurAmount > 0 ? `blur(${blurAmount}px)` : "none";
+
+        // Keep it fixed in the center of the screen
+        currentFixedX = window.innerWidth / 2;
+        currentFixedY = window.innerHeight / 2;
+
+        stageEl.style.position = "fixed";
+        stageEl.style.top = "0";
+        stageEl.style.left = "0";
+        stageEl.style.zIndex = "9999";
       } else {
-        phase = "services";
+        phase = "services-hidden";
         rotation = 180;
         circleP = 0;
         isFixed = true;
