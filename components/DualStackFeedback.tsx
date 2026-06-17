@@ -18,7 +18,7 @@ const reviews = [
   {
     name: "Honey K",
     role: "",
-    avatar: "/images/feedback/honey-k.png",
+    avatar: "/images/feedback/tfox.png",
     quote:
       "Smooth transitions, perfect timing, and incredible energy. His edits keep viewers engaged from start to finish.",
     index: "02",
@@ -26,7 +26,7 @@ const reviews = [
   {
     name: "TFOX",
     role: "",
-    avatar: "/images/feedback/tfox.png",
+    avatar: "/images/feedback/honey-k.png",
     quote:
       "The attention to detail in every edit is what stands out most. Every project feels thoughtful and well-crafted.",
     index: "03",
