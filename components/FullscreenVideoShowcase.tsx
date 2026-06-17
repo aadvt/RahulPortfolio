@@ -361,6 +361,9 @@ export default function FullscreenVideoShowcase({
 
   // ── Touch swipe snap ──────────────────────────────────────────────────────
   useEffect(() => {
+    const isMobile = typeof window !== "undefined" && window.innerWidth <= 768;
+    if (isMobile) return;
+
     let touchStartY = 0;
     const SWIPE_THRESHOLD = 20; // More sensitive swipe on mobile
     const COOLDOWN = 600;

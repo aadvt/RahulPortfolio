@@ -81,6 +81,12 @@ const mediaCarouselItems = [
     src: "https://player.vimeo.com/video/1197831231?background=1&autoplay=1&loop=1&muted=1",
     title: "REVOLUT — MAKE YOUR MONEY MOVE",
     className: "media-card-video-landscape"
+  },
+  {
+    type: "video",
+    src: "https://player.vimeo.com/video/1197780573?background=1&autoplay=1&loop=1&muted=1",
+    title: "CINEMATIC SHOWREEL",
+    className: "media-card-video-landscape"
   }
 ];
 
