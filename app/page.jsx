@@ -112,14 +112,7 @@ const infiniteGalleryImages = [
   "/images/IMG_6471.jpg"
 ];
 
-const reelImages = [
-  "/images/Images_1/IMG_7013.PNG",
-  "/images/Images_1/IMG_7012.PNG",
-  "/images/Images_1/IMG_7011 (1).PNG",
-  "/images/Images_1/IMG_6195.PNG",
-  "/images/Images_1/IMG_3035.jpg",
-  "/images/Images_1/IMG_0227.JPG"
-];
+
 
 
 
@@ -680,16 +673,7 @@ export default function Home() {
   // Services section reference
   const servicesSectionRef = useRef(null);
 
-  // Film reel section scroll-driven unroll
-  const filmReelRef = useRef(null);
-  const { scrollYProgress: filmReelProgress } = useScroll({
-    target: filmReelRef,
-    offset: ["start start", "end end"]
-  });
-  // Keep the reel partially unrolled so the section matches the reference immediately.
-  const filmStripX = useTransform(filmReelProgress, [0, 1], ["-18%", "0%"]);
-  // Canister subtle rotation driven by scroll
-  const canisterRotate = useTransform(filmReelProgress, [0, 1], [0, 720]);
+
 
   // Meech-inspired spinning 3D carousel for mixed photo and video media.
   // Fullscreen video showcase references and layout config
@@ -1869,60 +1853,7 @@ export default function Home() {
 
         <DualStackFeedback />
 
-        {/* ═══════ Kodak Film Reel — Scroll-Pinned Unroll ═══════ */}
-        <section className="film-reel-section" id="film-reel" ref={filmReelRef} aria-label="Film reel gallery">
-          <div className="film-reel-sticky">
-            {/* Kodak canister fixed on the left */}
-            <div className="film-canister">
-              <img
-                src="/images/toppng.com-kodak-portra-400-35mm-film-film-kodak-portra-160-402x526.png"
-                alt="Kodak Portra 400 film canister"
-                className="canister-img"
-              />
-            </div>
 
-            {/* The viewport that clips the film strip */}
-            <div className="film-viewport">
-              <motion.div className="film-tape" style={{ x: filmStripX }}>
-                {/* Sprocket holes top edge — continuous */}
-                <div className="tape-sprockets tape-sprockets-top">
-                  {Array.from({ length: 42 }).map((_, i) => (
-                    <div className="sprocket-hole" key={`st-${i}`} />
-                  ))}
-                </div>
-
-                {/* Film frames */}
-                <div className="tape-frames">
-                  {reelImages.map((src, idx) => {
-                    const frameNum = 6 - idx;
-                    return (
-                      <div className="tape-frame" key={idx}>
-                        <img src={src} alt={`Film frame ${frameNum}`} loading="lazy" />
-                        <span className="tape-frame-num">{frameNum}A</span>
-                        <span className="tape-frame-code">KODAK 5207</span>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {/* Sprocket holes bottom edge — continuous */}
-                <div className="tape-sprockets tape-sprockets-bottom">
-                  {Array.from({ length: 42 }).map((_, i) => (
-                    <div className="sprocket-hole" key={`sb-${i}`} />
-                  ))}
-                </div>
-
-                {/* Edge text along the film strip */}
-                <div className="tape-edge-text tape-edge-top">
-                  KODAK 5207 &nbsp; VISION3 250D &nbsp; COLOR NEGATIVE FILM &nbsp; KODAK 5207 &nbsp; VISION3 250D &nbsp; COLOR NEGATIVE FILM &nbsp; KODAK 5207
-                </div>
-                <div className="tape-edge-text tape-edge-bottom">
-                  EASTMAN &nbsp; PROCESSED BY RAHUL® &nbsp; 5207 219 &nbsp; EASTMAN &nbsp; PROCESSED BY RAHUL® &nbsp; 5207 219 &nbsp; EASTMAN
-                </div>
-              </motion.div>
-            </div>
-          </div>
-        </section>
       </main>
 
       <motion.footer 
