@@ -10,7 +10,7 @@ const reviews = [
   {
     name: "Dr. Red",
     role: "",
-    avatar: "/images/avatar-sarah.png",
+    avatar: "/images/feedback/dr-red.png",
     quote:
       "Creative, adaptable, and always improving. His editing has become increasingly refined and professional, making him a valuable asset to any project.",
     index: "01",
@@ -18,7 +18,7 @@ const reviews = [
   {
     name: "Honey K",
     role: "",
-    avatar: "/images/avatar-daniel.png",
+    avatar: "/images/feedback/honey-k.png",
     quote:
       "Smooth transitions, perfect timing, and incredible energy. His edits keep viewers engaged from start to finish.",
     index: "02",
@@ -26,7 +26,7 @@ const reviews = [
   {
     name: "TFOX",
     role: "",
-    avatar: "/images/avatar-maria.png",
+    avatar: "/images/feedback/tfox.png",
     quote:
       "The attention to detail in every edit is what stands out most. Every project feels thoughtful and well-crafted.",
     index: "03",
