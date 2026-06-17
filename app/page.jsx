@@ -1754,7 +1754,8 @@ export default function Home() {
 
         <DualStackFeedback />
 
-
+        {/* Black spacer buffer to prevent footer circle reveal from overlapping active feedback content */}
+        <div style={{ height: "45vh", background: "#000000" }} />
       </main>
 
       <motion.footer 
