@@ -282,7 +282,16 @@ export default function FullscreenVideoShowcase({
     const scrollTop  = window.scrollY + rect.top;
     const totalSlots = Math.max(n - 1, 1);
     const target     = scrollTop + (clamped / totalSlots) * (rect.height - window.innerHeight);
-    lenis.scrollTo(target, { duration });
+    
+    // Temporarily lock user scroll input during transition
+    lenis.stop();
+    lenis.scrollTo(target, { 
+      duration,
+      force: true,
+      onComplete: () => {
+        lenis.start();
+      }
+    });
   });
 
   // ── Navigation Click Handlers ─────────────────────────────────────────────
@@ -440,7 +449,14 @@ export default function FullscreenVideoShowcase({
         const target     = scrollTop + (idx / totalSlots) * (rect.height - window.innerHeight);
 
         if (Math.abs(window.scrollY - target) > 30) {
-          lenis.scrollTo(target, { duration: 0.55 });
+          lenis.stop();
+          lenis.scrollTo(target, { 
+            duration: 0.55,
+            force: true,
+            onComplete: () => {
+              lenis.start();
+            }
+          });
         }
       }, 120);
     };
