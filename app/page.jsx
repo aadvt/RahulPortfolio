@@ -1435,7 +1435,6 @@ export default function Home() {
               </div>
               <div className="hero-status">
                 <span className="dot-indicator"></span> Available for projects
-                <br/><span className="sub-date">EARLY FEB 2025</span>
               </div>
             </div>
 
