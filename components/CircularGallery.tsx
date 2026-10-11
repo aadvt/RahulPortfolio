@@ -90,7 +90,7 @@ export const CircularGallery = ({
   const doubleItems = [...galleryItems, ...galleryItems];
 
   const [isMobile, setIsMobile] = useState(false);
-  const scroll = useRef({ current: 0, target: 0, last: 0, ease: scrollEase });
+  const scroll = useRef({ current: 0, target: 0, last: 0, ease: scrollEase, position: 0 });
   const isDown = useRef(false);
   const startX = useRef(0);
   const dragMoved = useRef(false);

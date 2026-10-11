@@ -1436,6 +1436,9 @@ export default function Home() {
               <div className="hero-status">
                 <span className="dot-indicator"></span> Available for projects
                 <br/><span className="sub-date">EARLY FEB 2025</span>
+                <a href="/room" className="hero-room-link" onClick={(e) => e.stopPropagation()}>
+                  Enter the studio <span aria-hidden="true">↗</span>
+                </a>
               </div>
             </div>
 
@@ -1789,6 +1792,9 @@ export default function Home() {
               <span className="footer-value">AVAILABLE FOR FREELANCE & CONTRACT</span>
             </div>
             <div className="footer-col">
+              <span className="footer-label">EXPERIMENTS</span>
+              <a href="/room" className="footer-value">3D STUDIO ROOM</a>
+              <a href="/showcase" className="footer-value">3D ASSET SHOWCASE</a>
             </div>
             <div className="footer-col align-right">
               <span className="footer-label">SAY HELLO</span>
