@@ -73,7 +73,7 @@ function FadeSlide({
             player.setMuted(true);
             player.setVolume(0);
             setPlayerReady(true);
-          }).catch((err) => {
+          }).catch((err: unknown) => {
             console.error("Vimeo player ready promise rejected:", err);
           });
         } catch (e) {

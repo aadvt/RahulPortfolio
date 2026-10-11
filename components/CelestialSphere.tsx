@@ -33,7 +33,7 @@ export const CelestialSphere: React.FC<CelestialSphereProps> = ({
     let scene: THREE.Scene, 
         camera: THREE.OrthographicCamera, 
         renderer: THREE.WebGLRenderer, 
-        material: THREE.ShaderMaterial, 
+        material!: THREE.ShaderMaterial, 
         mesh: THREE.Mesh;
     let animationFrameId: number;
 
